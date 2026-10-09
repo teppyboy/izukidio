@@ -58,7 +58,9 @@ EXTERN_C NTSTATUS Izk_UsbSendUrbSync(PIZUK_DEVICE_EXTENSION dx, PURB Urb)
     if (irp == nullptr) {
         return STATUS_INSUFFICIENT_RESOURCES;
     }
-    irp->Tail.Overlay.DriverContext[0] = Urb;   // URB parameter for USB stack
+    // USB stack expects the URB in Parameters.Others.Argument1 of the next
+    // stack location (documented IOCTL_INTERNAL_USB_SUBMIT_URB pattern).
+    IoGetNextIrpStackLocation(irp)->Parameters.Others.Argument1 = Urb;
 
     status = IoCallDriver(dx->LowerDevice, irp);
     if (status == STATUS_PENDING) {
@@ -280,22 +282,25 @@ EXTERN_C NTSTATUS Izk_UsbSetSampleRate(PIZUK_DEVICE_EXTENSION dx, ULONG sampleRa
     NTSTATUS status;
     PURB urb;
     ULONG rate = RtlUlongByteSwap(sampleRate);   // USB is big-endian
-    UCHAR ep = 0x01;                             // TODO: derive from endpoint descriptor
+    UCHAR ep = 0x01;                             // ponytail: derive from endpoint descriptor
 
     urb = (PURB)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(struct _URB_CONTROL_VENDOR_OR_CLASS_REQUEST), IZUK_TAG);
     if (urb == nullptr) {
         return STATUS_INSUFFICIENT_RESOURCES;
     }
+    // Class-specific SET_CUR (sampling frequency) to the streaming endpoint:
+    // bmRequestType 0x22 (class|EP|out), wValue 0x0100 (CS=1, channel 0),
+    // wIndex = endpoint | interface<<8, 3-byte big-endian rate.
     UsbBuildVendorRequest(urb,
                           (USHORT)sizeof(struct _URB_CONTROL_VENDOR_OR_CLASS_REQUEST),
-                          0,                           // flags: out
-                          0, 0,
+                          USBD_TRANSFER_DIRECTION_OUT,
+                          0x22,                        // bmRequestType reserved bits
                           UAC_SET_CUR,
-                          (USHORT)(UAC_EP_SAM_FREQ_CTRL << 8),
+                          (USHORT)(UAC_EP_SAM_FREQ_CTRL),   // wValue: CS | channel 0
                           (USHORT)((ep & 0x0F) | (dx->AudioInterfaceNumber << 8)),
-                          nullptr, nullptr,
                           &rate, nullptr,
-                          sizeof(rate));
+                          3,                           // 24-bit sampling frequency
+                          nullptr);
     status = Izk_UsbSendUrbSync(dx, urb);
     ExFreePoolWithTag(urb, IZUK_TAG);
     if (NT_SUCCESS(status)) {
