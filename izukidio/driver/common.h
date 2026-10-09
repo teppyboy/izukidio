@@ -64,6 +64,8 @@ typedef struct _IZUK_DEVICE_EXTENSION {
 
     ULONG               SampleRate;         // 44100 / 48000
     ULONG               StreamUnitParam;    // IOCTL 0x220018 value, clamped >= 1
+    UCHAR               RoutingIn[IZUK_ROUTING_TABLE_SIZE];    // 0x220064
+    UCHAR               RoutingOut[IZUK_ROUTING_TABLE_SIZE];   // 0x220068
     ULONG               BytesPerSample;     // 2 or 3 (24-bit padded in 4-byte slots)
     ULONG               ChannelsIn;
     ULONG               ChannelsOut;

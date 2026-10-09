@@ -30,7 +30,7 @@ DEFINE_GUID(IZUK_DEVICE_INTERFACE,
 #define IOCTL_IZUK_GET_SAMPLE_CLOCK  0x220038   // OUT: 8 B 64-bit sample clock (latched)
 #define IOCTL_IZUK_GET_VERSION       0x22004C   // OUT: 4 B = 0x0CE5 (3301, magic shared with busbwdm)
 #define IOCTL_IZUK_SET_ROUTING_IN    0x220064   // IN:  3844 B routing/matrix table (input side)
-#define IOCTL_IZUK_SET_ROUTING_OUT   0x220068   // IN:  3844 B routing/matrix table (output side)
+#define IOCTL_IZUK_GET_ROUTING_OUT   0x220068   // OUT: 3844 B routing/matrix table (output side)
 #define IOCTL_IZUK_CLOSE_FILE        0x22006C   // release per-\IO-handle stream slot
 #define IOCTL_IZUK_GET_CAP           0x220070   // OUT: 4 B capability word
 #define IOCTL_IZUK_INIT_ONCE         0x220094   // one-time init flag (idempotent)

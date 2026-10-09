@@ -276,11 +276,27 @@ EXTERN_C NTSTATUS Izk_DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Ir
         Irp->IoStatus.Information = inLen;
         break;
 
-    case IOCTL_IZUK_VENDOR_CLASS_REQ:
     case IOCTL_IZUK_SET_ROUTING_IN:
     case IOCTL_IZUK_SET_ROUTING_OUT:
+        // 3,844 B routing matrix (research 01 §3: sub_F100F9A0/F960).
+        // PoC: latch the table; the isoch path does not consume routing yet.
+        if (inLen != IZUK_ROUTING_TABLE_SIZE) { status = STATUS_INVALID_PARAMETER; break; }
+        RtlCopyMemory(ioctl == IOCTL_IZUK_SET_ROUTING_IN ? dx->RoutingIn : dx->RoutingOut,
+                      Irp->AssociatedIrp.SystemBuffer, IZUK_ROUTING_TABLE_SIZE);
+        Irp->IoStatus.Information = 0;
+        status = STATUS_SUCCESS;
+        break;
+
+    case IOCTL_IZUK_GET_ROUTING_OUT:
+        if (outLen != IZUK_ROUTING_TABLE_SIZE) { status = STATUS_INVALID_PARAMETER; break; }
+        status = CopyOut(Irp, dx->RoutingOut, IZUK_ROUTING_TABLE_SIZE, outLen);
+        break;
+
     case IOCTL_IZUK_CLOSE_FILE:
-        status = STATUS_NOT_IMPLEMENTED;
+        // Release of the per-\IO-handle stream slot (sub_F1016F10). PoC has a
+        // single implicit slot; nothing to free beyond the file context.
+        status = STATUS_SUCCESS;
+        Irp->IoStatus.Information = 0;
         break;
 
     default:
