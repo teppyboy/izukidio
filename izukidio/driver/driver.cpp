@@ -33,7 +33,6 @@ EXTERN_C NTSTATUS Izk_AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT Phys
     NTSTATUS status;
     PDEVICE_OBJECT deviceObject = nullptr;
     PIZUK_DEVICE_EXTENSION dx;
-    UNICODE_STRING symbolicLinkName;
 
     DbgPrint("IZUKIDIO: AddDevice\n");
 
@@ -69,6 +68,7 @@ EXTERN_C NTSTATUS Izk_AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT Phys
     KeInitializeSpinLock(&dx->Out.Lock);
 
     RtlInitUnicodeString(&dx->NtNameBuffer, IZUK_NT_DEVNAME);
+    RtlInitUnicodeString(&dx->DosSymLink, IZUK_DOS_DEVNAME);
 
     // Register the same device interface GUID the original ASIO DLL enumerates
     // (research 03 §2). Enabled at PnP start device.
@@ -82,13 +82,11 @@ EXTERN_C NTSTATUS Izk_AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT Phys
         return status;
     }
 
-    // Legacy-friendly NT name (mirrors "\Device\BUSB2902" role).
-    dx->DosSymLink.Buffer = (PWSTR)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(IZUK_DOS_DEVNAME), IZUK_TAG);
-    if (dx->DosSymLink.Buffer != nullptr) {
-        RtlInitUnicodeString(&symbolicLinkName, IZUK_DOS_DEVNAME);
-        RtlCopyUnicodeString(&dx->DosSymLink, &symbolicLinkName);
-        IoCreateSymbolicLink(&dx->DosSymLink, &dx->NtNameBuffer); // non-fatal: GUID interface is primary
-    }
+    // Legacy-friendly NT name (mirrors "\Device\BUSB2902" role). DosSymLink
+    // points at the literal in the driver image (valid for the driver's
+    // lifetime) - the previous pool-copy left MaximumLength unset so
+    // RtlCopyUnicodeString copied nothing.
+    IoCreateSymbolicLink(&dx->DosSymLink, &dx->NtNameBuffer); // non-fatal: GUID interface is primary
 
     deviceObject->Flags &= ~DO_DEVICE_INITIALIZING;
     return STATUS_SUCCESS;
