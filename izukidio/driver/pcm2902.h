@@ -23,13 +23,14 @@
 #define IZUK_IFCLASS_HID      0x03
 #define IZUK_IFCLASS_MIDI     0x01     // subclass of audio class
 
-// Vendor/class request header used by IOCTL_IZUK_VENDOR_CLASS_REQ
-// (original driver DbgPrint names it VENDOR_OR_CLASS_REQUEST; 8-byte header
-// followed by variable data, research 01 §4).
+// Vendor/class request used by IOCTL_IZUK_VENDOR_CLASS_REQ (research 01 §4):
+// 8-byte setup-style header followed by the variable payload.
 typedef struct _IZUK_VENDOR_OR_CLASS_REQUEST {
-    ULONG   Flags;          // bit7: direction (0x80 = device-to-host IN)
-    ULONG   Reserved;
-    // variable payload follows
+    UCHAR   bmRequestType;
+    UCHAR   bRequest;
+    USHORT  wValue;
+    USHORT  wIndex;
+    USHORT  wLength;
 } IZUK_VENDOR_OR_CLASS_REQUEST, *PIZUK_VENDOR_OR_CLASS_REQUEST;
 
 // 16-byte hardware info blob returned by IOCTL_IZUK_GET_HWINFO (offsets observed
