@@ -7,6 +7,9 @@
 .claude/*
 skills-lock.json
 
+# Original driver package (reference material only, not part of this repo)
+BEHRINGER_2902_X64_2.8.40/
+
 # Reverse-engineering scratch / large IDA databases (regenerable from binaries)
 .ida-dbs/
 *.id0
@@ -20,3 +23,7 @@ skills-lock.json
 izukidio/build/
 *.vcxproj.user
 x64/
+
+# Local-only analysis tooling (WDK type shims for clangd on non-Windows hosts)
+.local/
+.clangd

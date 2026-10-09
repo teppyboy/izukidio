@@ -1,76 +1,113 @@
-// common.h - shared declarations for the Ploytec2902 reimplementation driver.
-// Reimplementation of Ploytec GmbH "usb-audio.de" driver for Behringer USB audio
-// devices based on the TI PCM2900/2902 codec (USB VID_08BB, PID_2900/2902).
+// common.h - izukidio: experimental reimplementation of the Behringer USB Audio
+// 2.8.40 driver (Ploytec busb2902.sys/busbasio stack) for Windows 10/11.
+//
+// Research source: docs/research/00-overview.md, 01-busb2902-sys.md, 03-busbasio-dll.md
 #pragma once
 
-#define POOL_NX_OPTIN 1
 #include <ntddk.h>
 #define NTSTRSAFE_LIB
 #include <ntstrsafe.h>
 #include <usb.h>
 #include <usbdlib.h>
 
-#define P2902_TAG '229P'   // pool tag 'P292'
+#include "protocol.h"
+#include "pcm2902.h"
 
-#define DEVICE_NAME_USBB L"\\Device\\BUSB2902"
-#define DOSDEVICE_NAME_USBB L"\\DosDevices\\BUSB2902"
-// Original driver also exposes a symbolic name the ASIO DLL opens (see protocol.h
-// for the interface it uses). Kept as a legacy-style NT device name.
+#define IZUK_TAG 'KUZI'   // pool tag 'IZUK'
 
-#define P2902_MAX_ENDPOINTS 4
+// Legacy-compatible device types used by the original driver (research 01 §2).
+// We keep 0x8002 for the FDO so DeviceIoControl validation matches the original.
+#define IZUK_DEVICE_TYPE_FDO   0x8002
 
-// Per-endpoint isochronous stream state
-typedef struct _P2902_ISO_ENDPOINT {
-    PUSBD_PIPE_INFORMATION  Pipe;               // from interface descriptor
-    ULONG                   MaxPacketSize;
-    ULONG                   FramesPerUrb;       // ISO packets per URB
-    ULONG                   BytesPerFrame;      // packed frame size (channels * bytes * align)
-    BOOLEAN                 Inbound;            // capture (IN) vs render (OUT)
-    BOOLEAN                 Active;
-    KEVENT                  StopEvent;
-    PIRP                    PendingIrp;
-} P2902_ISO_ENDPOINT, *PP2902_ISO_ENDPOINT;
+#define IZUK_NT_DEVNAME   L"\\Device\\IZUKIDIO"
+#define IZUK_DOS_DEVNAME  L"\\DosDevices\\IZUKIDIO"
 
-typedef struct _P2902_DEVICE_EXTENSION {
-    PDEVICE_OBJECT  LowerDevice;        // USB PDO
+#define IZUK_MAX_ISO_URBS      4
+#define IZUK_ISO_PACKETS_PER_URB 8          // USB full-speed: 1 ms frames; pack 8 ms per URB
+#define IZUK_MAX_CHANNELS      8
+
+// One isochronous endpoint engine (IN = capture, OUT = render).
+typedef struct _IZUK_ISO_ENDPOINT {
+    USBD_PIPE_HANDLE    PipeHandle;
+    ULONG               MaxPacketSize;
+    ULONG               BytesPerFrame;      // packed audio bytes per USB frame
+    ULONG               FramesPerUrb;       // ISO packets per URB
+    BOOLEAN             Inbound;
+    BOOLEAN             Active;
+    PIRP                UrbIrp[IZUK_MAX_ISO_URBS];
+    PURB                Urb[IZUK_MAX_ISO_URBS];
+    PMDL                Mdl[IZUK_MAX_ISO_URBS];
+    PUCHAR              TransferBuffer[IZUK_MAX_ISO_URBS];
+    KSPIN_LOCK          Lock;
+    LONG                PendingUrbCount;
+    ULONG               ErrorCount;
+    LONG64              FramesTransferred64;    // drives the 64-bit sample clock
+    KEVENT              StopEvent;
+} IZUK_ISO_ENDPOINT, *PIZUK_ISO_ENDPOINT;
+
+typedef struct _IZUK_DEVICE_EXTENSION {
+    PDEVICE_OBJECT  Self;                   // our FDO
+    PDEVICE_OBJECT  LowerDevice;            // USB PDO
     PDEVICE_OBJECT  Pdo;
     USBD_HANDLE     UsbdHandle;
-    PUSB_DEVICE_DESCRIPTOR  DeviceDescriptor;
+    PUSB_DEVICE_DESCRIPTOR          DeviceDescriptor;
     PUSB_CONFIGURATION_DESCRIPTOR   ConfigDescriptor;
-    PUSBD_INTERFACE_INFORMATION Interface;      // selected alt setting
-    USBD_PIPE_HANDLE    IsoInPipe;              // PCM2902 ADC isoch IN
-    USBD_PIPE_HANDLE    IsoOutPipe;             // PCM2902 DAC isoch OUT
-    ULONG               PipeMaxPacketIn;
-    ULONG               PipeMaxPacketOut;
-    ULONG               SampleRate;             // 48000, 44100, ...
-    ULONG               BytesPerSample;         // 2 (16-bit) / 3 (24-bit padded)
+    PUSBD_INTERFACE_INFORMATION     InterfaceInfo;      // selected audio alt setting
+    UCHAR           AudioInterfaceNumber;
+    UCHAR           AudioAlternateSetting;
+
+    USBD_PIPE_HANDLE    IsoInPipe;          // PCM2902 ADC isoch IN endpoint
+    USBD_PIPE_HANDLE    IsoOutPipe;         // PCM2902 DAC isoch OUT endpoint
+    USBD_PIPE_HANDLE    FeedbackPipe;       // optional explicit-feedback IN endpoint
+    ULONG               MaxPacketIn;
+    ULONG               MaxPacketOut;
+
+    ULONG               SampleRate;         // 44100 / 48000
+    ULONG               BytesPerSample;     // 2 or 3 (24-bit padded in 4-byte slots)
     ULONG               ChannelsIn;
     ULONG               ChannelsOut;
-    LONG                ReferenceClock;         // feedback endpoint handling
-    P2902_ISO_ENDPOINT  Endpoint[P2902_MAX_ENDPOINTS];
-    PDEVICE_OBJECT      ControlDevice;          // IOCTL-facing CDO for ASIO DLL
-    UNICODE_STRING      ControlSymLink;
-    KEVENT              RemoveEvent;
+
+    // Streaming state shared with the ASIO DLL via IOCTLs (research 03 §3)
+    LARGE_INTEGER       SampleClock;        // 64-bit sample position (IOCTL 0x2200BC/0x220038)
+    LONG                StreamingClients;   // registered PIDs (IOCTL 0x2200B0)
+    KEVENT              ClientEvent;        // completion event signaled per buffer period
+    BOOLEAN             TransportActive;
+
+    IZUK_ISO_ENDPOINT   In;                 // capture engine
+    IZUK_ISO_ENDPOINT   Out;                // render engine
+
     IO_REMOVE_LOCK      RemoveLock;
-    BOOLEAN             Streaming;
-} P2902_DEVICE_EXTENSION, *PP2902_DEVICE_EXTENSION;
+    BOOLEAN             ConfigFailed;       // USB configuration failed at start
+    UNICODE_STRING      InterfaceSymbolicLink; // {090E2CEE-...} interface
+    UNICODE_STRING      DosSymLink;         // \DosDevices\IZUKIDIO
+    UNICODE_STRING      NtNameBuffer;       // \Device\IZUKIDIO
+} IZUK_DEVICE_EXTENSION, *PIZUK_DEVICE_EXTENSION;
 
 extern "C" {
 
 DRIVER_INITIALIZE DriverEntry;
+DRIVER_UNLOAD     IzkDriverUnload;
 
-NTSTATUS P2902_AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT PhysicalDeviceObject);
-NTSTATUS P2902_DispatchPnp(PDEVICE_OBJECT DeviceObject, __in PIRP Irp);
-NTSTATUS P2902_DispatchPower(PDEVICE_OBJECT DeviceObject, __in PIRP Irp);
-NTSTATUS P2902_DispatchSystemControl(PDEVICE_OBJECT DeviceObject, __in PIRP Irp);
-NTSTATUS P2902_DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, __in PIRP Irp);
+// driver.cpp
+NTSTATUS Izk_AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT PhysicalDeviceObject);
 
-NTSTATUS P2902_UsbConfigure(PP2902_DEVICE_EXTENSION dx);
-NTSTATUS P2902_UsbUnconfigure(PP2902_DEVICE_EXTENSION dx);
-NTSTATUS P2902_SelectAlternateInterface(PP2902_DEVICE_EXTENSION dx, __in UCHAR altSetting);
-NTSTATUS P2902_SetSampleRate(PP2902_DEVICE_EXTENSION dx, __in ULONG sampleRate);
+// device.cpp
+NTSTATUS Izk_DispatchCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS Izk_DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS Izk_DispatchInternalDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS Izk_DispatchPnp(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS Izk_DispatchPower(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS Izk_DispatchSystemControl(PDEVICE_OBJECT DeviceObject, PIRP Irp);
 
-NTSTATUS P2902_IsochStart(PP2902_DEVICE_EXTENSION dx, BOOLEAN inbound, __in ULONG bufferSizeBytes);
-NTSTATUS P2902_IsochStop(PP2902_DEVICE_EXTENSION dx, BOOLEAN inbound);
+// usb.cpp
+NTSTATUS Izk_UsbConfigure(PIZUK_DEVICE_EXTENSION dx);
+void     Izk_UsbUnconfigure(PIZUK_DEVICE_EXTENSION dx);
+NTSTATUS Izk_UsbSelectAlternate(PIZUK_DEVICE_EXTENSION dx, UCHAR alternateSetting);
+NTSTATUS Izk_UsbSetSampleRate(PIZUK_DEVICE_EXTENSION dx, ULONG sampleRate);
+NTSTATUS Izk_UsbSendUrbSync(PIZUK_DEVICE_EXTENSION dx, PURB Urb);
+
+// isoch.cpp
+NTSTATUS Izk_IsoStart(PIZUK_DEVICE_EXTENSION dx, BOOLEAN inbound);
+NTSTATUS Izk_IsoStop(PIZUK_DEVICE_EXTENSION dx, BOOLEAN inbound);
 
 } // extern "C"

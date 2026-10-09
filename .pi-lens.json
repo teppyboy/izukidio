@@ -1,0 +1,3 @@
+{
+  "ignore": ["BEHRINGER_2902_X64_2.8.40/**", "izukidio/driver/**"]
+}

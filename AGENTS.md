@@ -54,3 +54,7 @@ docs/research/*.i64        <- saved IDA database for busb2902.sys, reuse it
 - Driver: WDM, x64, no CRT dependency beyond ntoskrnl; pool tags `'IZUK'`.
 - Any new kernel/user contract change must be reflected in `docs/research/05-poc-design.md`.
 - The original binaries are reference-only; never load them on modern Windows.
+- **Static analysis on macOS/Linux hosts**: `driver/*` will show `ntddk.h not found`
+  and cascading unknown-type diagnostics because the Windows Driver Kit is not
+  available on those hosts. This is environmental, not a code defect; build and
+  lint on a Windows machine with the WDK + VS2022 instead (see `izukidio/README.md`).

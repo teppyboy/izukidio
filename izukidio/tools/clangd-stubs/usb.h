@@ -1,9 +1,0 @@
-// Stub of usb.h for static analysis on non-Windows hosts only.
-#pragma once
-#include "ntddk.h"
-typedef struct _USBD_PIPE_INFORMATION { USHORT MaximumPacketSize; UCHAR EndpointAddress; UCHAR Interval; UCHAR PipeType; UCHAR PipeFlags; PVOID PipeHandle; ULONG MaximumTransferSize; ULONG PipeMaxTransferSize; } USBD_PIPE_INFORMATION, *PUSBD_PIPE_INFORMATION;
-typedef struct _USBD_INTERFACE_INFORMATION { USHORT Length; UCHAR InterfaceNumber; UCHAR AlternateSetting; UCHAR Class; UCHAR SubClass; UCHAR Protocol; UCHAR Reserved; PVOID InterfaceHandle; ULONG NumberOfPipes; USBD_PIPE_INFORMATION Pipes[1]; } USBD_INTERFACE_INFORMATION, *PUSBD_INTERFACE_INFORMATION;
-typedef struct _USB_CONFIGURATION_DESCRIPTOR { UCHAR bLength; UCHAR bDescriptorType; USHORT wTotalLength; UCHAR bNumInterfaces; UCHAR bConfigurationValue; UCHAR iConfiguration; UCHAR bmAttributes; UCHAR MaxPower; } USB_CONFIGURATION_DESCRIPTOR, *PUSB_CONFIGURATION_DESCRIPTOR;
-typedef struct _USB_DEVICE_DESCRIPTOR { UCHAR bLength; UCHAR bDescriptorType; USHORT bcdUSB; UCHAR bDeviceClass; UCHAR bDeviceSubClass; UCHAR bDeviceProtocol; UCHAR bMaxPacketSize0; USHORT idVendor; USHORT idProduct; USHORT bcdDevice; UCHAR iManufacturer; UCHAR iProduct; UCHAR iSerialNumber; UCHAR bNumConfigurations; } USB_DEVICE_DESCRIPTOR, *PUSB_DEVICE_DESCRIPTOR;
-typedef struct _USB_INTERFACE_DESCRIPTOR { UCHAR bLength; UCHAR bDescriptorType; UCHAR bInterfaceNumber; UCHAR bAlternateSetting; UCHAR bNumEndpoints; UCHAR bInterfaceClass; UCHAR bInterfaceSubClass; UCHAR bInterfaceProtocol; UCHAR iInterface; } USB_INTERFACE_DESCRIPTOR, *PUSB_INTERFACE_DESCRIPTOR;
-typedef struct _USB_ENDPOINT_DESCRIPTOR { UCHAR bLength; UCHAR bDescriptorType; UCHAR bEndpointAddress; UCHAR bmAttributes; USHORT wMaxPacketSize; UCHAR bInterval; } USB_ENDPOINT_DESCRIPTOR, *PUSB_ENDPOINT_DESCRIPTOR;
