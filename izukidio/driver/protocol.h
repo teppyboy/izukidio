@@ -39,17 +39,25 @@ DEFINE_GUID(IZUK_DEVICE_INTERFACE,
 #define IOCTL_IZUK_SET_FILE_READY    0x2200A0   // IN:  4 B -> per-file m_bIsFileReady
 #define IOCTL_IZUK_GET_BUILD         0x2200A4   // OUT: 4 B = 0x0207A800 (build 2.8.40)
 #define IOCTL_IZUK_REGISTER_CLIENT   0x2200B0   // IN:  4 B client PID (on \IO handle)
-#define IOCTL_IZUK_GET_POSITION_IN   0x2200B4   // OUT: 4 B input sample position
-#define IOCTL_IZUK_GET_POSITION_OUT  0x2200B8   // OUT: 4 B output sample position
-#define IOCTL_IZUK_SET_CLOCK64       0x2200BC   // IN:  8 B 64-bit clock value
-#define IOCTL_IZUK_READ_STREAM       0x2200C0   // IN/OUT: arbitrary-length PCM read (capture)
-#define IOCTL_IZUK_WRITE_STREAM      0x2200C4   // IN: arbitrary-length PCM write (render)
+#define IOCTL_IZUK_GET_SHARED_COUNT  0x2200B4   // OUT: 4 B count of other handles sharing our slot
+#define IOCTL_IZUK_GET_POSITION      0x2200B8   // OUT: 4 B position/state (sub_F1016AF0)
+#define IOCTL_IZUK_SET_CLOCK64       0x2200BC   // IN:  8 B 64-bit clock value (sync URB path)
+#define IOCTL_IZUK_READ_STREAM       0x2200C0   // OUT: arbitrary-length PCM read (capture)
+#define IOCTL_IZUK_WRITE_STREAM      0x2200C4   // IN:  arbitrary-length PCM write (render)
+#define IOCTL_IZUK_READ_STREAM_ALT   0x2200C8   // OUT: stream read variant (sub_F1002B60)
 #define IOCTL_IZUK_GET_STREAMINFO    0x2200CC   // OUT: 64 B stream info
 #define IOCTL_IZUK_PROPERTY_CTRL     0x2200D0   // IN/OUT: 260 B property get/set dispatcher
 #define IOCTL_IZUK_PROPERTY_FILE     0x2200D4   // IN/OUT: 260 B property with \IO file object
 #define IOCTL_IZUK_INVALIDATE_REL    0x2200E0   // re-enumerate bus children (BusRelations)
 
 // Sizes enforced by the original dispatch:
+// State dump layout (research 02 §3): 8-byte header + 4 terminal blocks of
+// 24644 (0x6044) bytes; dword at +8 = per-transaction frame size (busbwdm.sys
+// copies it to its AdapterCommon). Format-group stride 0x604, record stride
+// 0x60, record size 0x4C (WAVEFORMATEX-style: channels, min/max rate @+0x20/24).
+#define IZUK_STATE_HEADER_SIZE         8
+#define IZUK_TERMINAL_BLOCK_SIZE   24644
+#define IZUK_TERMINAL_COUNT            4
 #define IZUK_STATE_DUMP_SIZE       98584
 #define IZUK_CONFIG_STRUCT_SIZE       76
 #define IZUK_ROUTING_TABLE_SIZE     3844
