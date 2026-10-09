@@ -62,6 +62,12 @@ DEFINE_GUID(IZUK_DEVICE_INTERFACE,
 #define IZUK_CONFIG_STRUCT_SIZE       76
 #define IZUK_ROUTING_TABLE_SIZE     3844
 #define IZUK_PROPERTY_STRUCT_SIZE    260
+
+// 0x2200D0/D4 property buffer (research 01 §3, 03 §5): [0] = command, rest args.
+typedef struct _IZUK_PROPERTY_STRUCT {
+    ULONG   Command;
+    ULONG   Arg[(260 - 4) / 4];
+} IZUK_PROPERTY_STRUCT, *PIZUK_PROPERTY_STRUCT;
 #define IZUK_STREAMINFO_SIZE           64
 #define IZUK_HWINFO_SIZE               16
 #define IZUK_FILE_STATUS_SIZE          16
