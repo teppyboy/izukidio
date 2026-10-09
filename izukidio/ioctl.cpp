@@ -306,12 +306,10 @@ EXTERN_C NTSTATUS Izk_DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Ir
     }
 
     case IOCTL_IZUK_SET_ROUTING_IN:
-    case IOCTL_IZUK_SET_ROUTING_OUT:
-        // 3,844 B routing matrix (research 01 §3: sub_F100F9A0/F960).
+        // 3,844 B routing matrix (research 01 §3: sub_F100F9A0).
         // PoC: latch the table; the isoch path does not consume routing yet.
         if (inLen != IZUK_ROUTING_TABLE_SIZE) { status = STATUS_INVALID_PARAMETER; break; }
-        RtlCopyMemory(ioctl == IOCTL_IZUK_SET_ROUTING_IN ? dx->RoutingIn : dx->RoutingOut,
-                      Irp->AssociatedIrp.SystemBuffer, IZUK_ROUTING_TABLE_SIZE);
+        RtlCopyMemory(dx->RoutingIn, Irp->AssociatedIrp.SystemBuffer, IZUK_ROUTING_TABLE_SIZE);
         Irp->IoStatus.Information = 0;
         status = STATUS_SUCCESS;
         break;
