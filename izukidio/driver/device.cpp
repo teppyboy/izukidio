@@ -18,6 +18,16 @@ typedef struct _IZUK_FILE_CONTEXT {
     ULONG   Position;           // per-handle position latch
 } IZUK_FILE_CONTEXT, *PIZUK_FILE_CONTEXT;
 
+// Start-device lower-stack wait: completion routine signals the caller event
+// and holds the IRP (STATUS_MORE_PROCESSING_REQUIRED) until we complete it.
+static NTSTATUS IzkPnpStartCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context)
+{
+    UNREFERENCED_PARAMETER(DeviceObject);
+    UNREFERENCED_PARAMETER(Irp);
+    KeSetEvent((PKEVENT)Context, IO_NO_INCREMENT, FALSE);
+    return STATUS_MORE_PROCESSING_REQUIRED;
+}
+
 static NTSTATUS IzkCreate(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
     NTSTATUS status = STATUS_SUCCESS;
@@ -172,16 +182,19 @@ EXTERN_C NTSTATUS Izk_DispatchPnp(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
     switch (iosl->MinorFunction) {
     case IRP_MN_START_DEVICE:
-        // Wait for lower stack then configure USB (select config, alt setting).
+        // Wait for the lower stack to finish starting, then configure USB
+        // (select config, alternate setting).
         KeInitializeEvent(&event, NotificationEvent, FALSE);
         IoCopyCurrentIrpStackLocationToNext(Irp);
-        IoSetCompletionRoutine(Irp, nullptr, nullptr, FALSE, FALSE, TRUE);
+        IoSetCompletionRoutine(Irp, IzkPnpStartCompletion, &event, TRUE, TRUE, TRUE);
         status = IoCallDriver(dx->LowerDevice, Irp);
         if (status == STATUS_PENDING) {
             KeWaitForSingleObject(&event, Executive, KernelMode, FALSE, nullptr);
         }
-        // NOTE: minimal PoC waits via completion; replace with proper
-        // IoSetCompletionRoutine completion fn for production hardening.
+        status = Irp->IoStatus.Status;
+        if (!NT_SUCCESS(status)) {
+            break;  // complete the IRP with the lower status below
+        }
         status = Izk_UsbConfigure(dx);
         dx->ConfigFailed = !NT_SUCCESS(status);
         if (NT_SUCCESS(status)) {
