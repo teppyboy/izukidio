@@ -65,31 +65,113 @@ control handle, IO = `\IO` handle. "OUT" = DLL receives.
 `0x2200C0/0x2200C4/0x2200C8` — those belong to other clients (control panel /
 MME-era paths). An ASIO-compatible reimplementation does **not** need them first.
 
-## 3. Zero-copy data plane (resolved — replaces all earlier guesses)
+## 3. Zero-copy data plane (fully resolved — byte-exact)
 
-x64 `0x220030` sequence (senders `0x18000b4d0`, kernel side `sub_F101D7B0` case
-`0x220030` → `sub_F101A060`/`sub_F1017660`):
+### 3.1 Shared-area layout (verified from both sides)
 
-1. The DLL owns a **1,618,488-byte (0x189C38) user-mode shared area**:
-   two engine rings of **0xC4E00 = 806,912 bytes** each (render + capture; each
-   ring object has a 4-byte position counter at +8, ceiling constant 201,600),
-   followed by a 56-byte tail: **event HANDLE at +0x189D8 (1612824)**, **thread
-   HANDLE at +1612832**, dword counter at +1612840.
-2. The DLL sends `0x220030` with a 16-byte buffer: `[0]` = register (1) /
-   unregister (0) flag, `+8` = shared-area user VA (x86 same struct).
-3. Kernel: finds the per-file `\IO` slot, `IoAllocateMdl` on the user VA (length
-   0x189C38), `MmProbeAndLockPages(UserMode, IoModifyAccess)`,
-   `MmMapLockedPagesSpecifyCache` fallback — then:
-   - `ObReferenceObjectByHandle` on the event handle → kernel **signals the ASIO
-     event directly from the isoch completion path**;
-   - `ObReferenceObjectByHandle` on the thread handle → `KeSetPriorityThread(31)`
-     (**priority boost for the ASIO feeder thread**).
-   (kernel `sub_F10340B0` @ `0xF10340B0`, called from `sub_F1017660`.)
-4. DLL follows with `0x2200A0` (file-ready = 1), `Sleep(200)` after register,
-   `Sleep(10)` after the toggle (x86 `sub_10009770`).
-5. Position/clock exchange during streaming: `0x220038` (latched 8-byte clock
-   from the `\IO` slot, read-clear) and the per-ring counters in the mapped
-   memory (`sub_180001A60`: reports `201600 - counter`).
+The ASIO DLL owns one **user-mode shared area of 0x189C38 = 1,612,856 bytes**:
+
+```text
++0                engine A object (0xC4E0C = 806,412 B)
++806,412          engine B object (0xC4E0C)
++1,612,824        32-byte tail:
+  +1,612,824 (+0)   event HANDLE  (DLL-created, kernel KeSetEvent target)
+  +1,612,832 (+8)   thread HANDLE (DLL feeder thread, kernel boosts to 31)
+  +1,612,840 (+16)  dword (context)
+  +1,612,852 (+28)  dword overflow/latency counter (kernel-managed, Interlocked)
+```
+
+Each engine object = 12-byte header + 0xC4E00 (806,400 B) sample ring:
+
+```c
+struct PG_ENGINE {            // 0xC4E0C bytes, dword-indexed
+    volatile ULONG writeIndex;   // +0   ring write cursor in DWORDS, wraps at 201600 (0x31380)
+    volatile ULONG readIndex;    // +4   read cursor (consumer side)
+    volatile ULONG totalWritten; // +8   running total of DWORDS ever written (position counter,
+                                 //        NEVER reset; DLL: frames = totalWritten / bytesPerFrame)
+    ULONG ring[201600];          // +12  806,400 B of 32-bit samples
+};
+```
+
+In PGWinDevice the two engines are embedded and adjacent:
+engine A at **+98888 (0x18248)** (ends exactly at engine B), engine B at
+**+905300 (0xDD054)**; handles/state live after them at +1711712..+1711744.
+`sub_180001A90` zeroes dword[0..2] + `memset(+12, 0, 0xC4E00)`.
+
+### 3.2 Kernel ring writer `sub_F1007B30` (busb2902.sys, verbatim algorithm)
+
+```c
+write(slot->sharedVa + 806412, data, lenDwords):   // engine B = kernel→user (capture)
+    n    = min(len, 201600 - totalWritten)         // clamp by accumulator
+    free = 201600 - writeIndex
+    if free < n:                                   // split at wrap
+        copy free dwords   to &ring[writeIndex]
+        copy (n-free) dwords to &ring[0]; writeIndex = n-free
+    else:
+        copy n dwords to &ring[writeIndex]; writeIndex += n
+        if writeIndex >= 201600: writeIndex = 0
+    InterlockedAdd(&totalWritten, n)
+    return n                                       // caller compares vs len for overflow
+```
+
+Overflow accounting (`sub_F1017340`): bytes dropped = `frameSize * (len - written)`,
+divided by a per-slot divisor; subtracted from `tail+28` via
+`_InterlockedExchangeAdd`, floored at 0 by `_InterlockedExchange`.
+
+### 3.3 Start/stop handshake `sub_18000B4D0` (x64, critical section at +1711744)
+
+1. Requires the `\IO` handle (+98856) ≠ -1.
+2. If direction unchanged (`startFlag == byte +98872`) → no-op success.
+3. On stop with force flag: `0x22006C` (release stream slot).
+4. Secondary/companion handle stored at +98840.
+5. On start: re-init engines (`sub_18000A8D0`), stash engine-A VA via
+   `sub_18000D720(desc+8, this+98888)`.
+6. `DeviceIoControl(\IO, 0x220030, NULL, 0, desc16, 0x10, ...)`: 16-byte
+   descriptor = `{ u8 startFlag @0; pad; u64 engineA user VA @+8 }`
+   (x86 identical). `Sleep(10)` after the call.
+7. On success: latch flag to +98872, `Sleep(200)`, then
+   `DeviceIoControl(\IO, 0x2200A0, NULL, 0, &one, 4, ...)` (file-ready = 1).
+8. On stop: clear +98872, `SetEvent` via `sub_18000BBB0` (event +18230).
+
+### 3.4 DLL-side position readback (decompiler-verified)
+
+- `sub_180001A60(engine)`: returns `engine->totalWritten`, outputs
+  `201600 - totalWritten` ("frames remaining").
+- `sub_18000B360(state)` (per wait-loop wakeup, `sub_18000BBE0`, 0x12C ms
+  timeout on event +98864):
+  - `state[0]` = consume `*(DWORD*)(dev+1711732)` (read-clear)
+  - `state[5]` = `*(dev+1711736)`; `state[6]` = `*(dev+1711728)` (stream state,
+    wait loop treats 2 and 5 as terminal)
+  - `state[1..2]` = engine B position / bytesPerFrame `*(fmt+28)`
+  - `state[3..4]` = engine A position / bytesPerFrame `*(fmt+36)`
+  - i.e. **engine B (sharedVa+806412) is the capture (IN) ring, engine A is the
+    playback (OUT) ring** — the kernel writes incoming audio to engine B and
+    drains outgoing audio from engine A.
+- The wait loop is reference-counted on `dev+18240` (`lock add ±1`).
+
+### 3.5 Open/init sequence `sub_18000AAA0` (x64, per control handle)
+
+- `0x220000` → name buffer 0xFF: `"<name>\xA7<24-byte LicenseKey>"`; key goes to
+  a `LicenseKey` property, name cached at `this+16`.
+- `0x220004` → second name 0xFF, cached at `this+48`.
+- `0x22000C` → **0x18118-byte state dump cached at `this+80`** (whole-blob copy,
+  layout in research 02 §3).
+- `*(DWORD*)(this+98832) = 0`, then `0x2200A4` → 4 bytes into `this+98832`.
+- `0x22004C` → 4-byte version; **must equal 3301** else hard error dialog
+  ("old/newer USB driver installed").
+- Clear `*(DWORD*)(this+98876)`, `*(BYTE*)(this+98828) = 0`;
+  `sub_180001730(w, this+80, this+82)` + `sub_180008790` (device-id walk via
+  dynamically loaded `cfgmgr32!CM_Get_Device_IDA/CM_Get_Parent`).
+- If +98828 set: `0x220070` → 4 bytes into `this+98824`.
+- `0x22009C` → 4-byte bool into `this+98829`.
+
+### 3.6 Earlier notes superseded
+
+Earlier drafts said "two 0xC4E00 rings + 56-byte tail" and "1,618,488 bytes":
+ring **data** is 0xC4E00, the engine **object** is 0xC4E0C, the tail is **32**
+bytes, and the area is 0x189C38 = 1,612,856 B. The registered VA is engine A's
+object start; the kernel adds 0xC4E0C for engine B and 2×0xC4E0C = 0x189C18 for
+the tail.
 
 **Kernel-side ring accounting** matches: 98584-byte blob header frame size,
 0x6044 terminal blocks for format tables (research 02 §3), transaction pools

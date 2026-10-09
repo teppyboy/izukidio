@@ -196,6 +196,67 @@ WM8776/XCorpio/"Maya 5.1 USB" = Ploytec shared codebase; inert for PCM2900/2902.
   `StartRoutine` 0xF10083B0 → `0xF1008410`), plus `KeInitializeTimer/DPC` banks
   (`KernelThreadBank`) and completion DPCs re-submitting transactions.
 
+## 5.1 Zero-copy shared-area contract (deep dive, verified both sides)
+
+The "kernel ring buffer" in §5 **is the ASIO DLL's shared area**, mapped with
+`IoAllocateMdl` + `MmProbeAndLockPages(UserMode, IoModifyAccess)` +
+`MmMapLockedPartsSpecifyCache` (`sub_F10340B0`, single site) after the DLL's
+`0x220030` register call. Full layout and the ring writer `sub_F1007B30`
+(cursor semantics, wrap at 201600 dwords, `totalWritten` position counter) are
+documented in research 03 §3.1–3.2 — do not re-derive from this file.
+
+Kernel-side anchors (this binary):
+
+- `sub_F1017340(slot, data, len)`: fan-out write into each registered client's
+  mapped area (`sub_F10342B0`/`sub_F1034300` = acquire/release the mapping),
+  `sub_F1007B30(sharedVa + 806412, ...)` = capture ring (engine B); overflow
+  accounting into `tail+28` (`_InterlockedExchangeAdd`, frame-size/divisor from
+  slot+72/+76).
+- 0x220030 handler locks the 16-byte descriptor `{ u8 startFlag @0; u64 VA @+8 }`,
+  maps 0x189C38 bytes, `ObReferenceObjectByHandle` on tail event (signal) and
+  tail thread (`KeSetPriorityThread(31)`).
+
+## 5.2 Isoch worker & IN data path (deep dive, decompiler-verified)
+
+Thread model:
+
+- `sub_F1008290` creates a system thread (`PsCreateSystemThread`) with context
+  `{ callback fn @+0, thread obj @+8, handle @+16, stop flag @+24, KEVENT @+32,
+     work queue @+64, arg @+56 }`; `StartRoutine` (0xF10083B0) loops
+  `sub_F1008410`: pop item from the queue (`sub_F1029DE0`, timeout 1) → call
+  `callback(item, arg)`; on empty queue wait the KEVENT; stop flag ends thread.
+
+IN (capture) submission:
+
+- `bulkAudioGo` (`0xF1005E80`): flush both stream objects (ext+1704/+1712, via
+  `sub_F1033980`), depth = `30*rate/(1000*bufferTimeMs)` clamped 4..31 (field
+  ext+19872 = buffer time), queues that many IN transactions (`sub_F1005FF0`)
+  plus 3 OUT transactions (`sub_F1006150`).
+- `sub_F1005FF0`: guarded by start flags (ext+1796 run, ext+1628 streaming,
+  ext+5864 suspend); scans the **32-slot IN pool (ext+17480, 64-byte stride)**
+  for a free record; if the IRP at slot+16 is present, (re)initializes it via
+  `sub_F1003180(irp, completion sub_F1007030, slot, 1,1,1)` and
+  `IofCallDriver(lowerPdo)` — the PDO pointer lives at
+  `*(ext+5832) + 768`. No free slot → `sub_F10044A0(slot)` (recycle).
+
+IN completion → ring:
+
+- `sub_F1007030(slot)`: on non-cancelled, non-error status and valid context,
+  calls `sub_F1006660(streamCtx, slot)`, then recycles the slot
+  (`sub_F10044A0`) and completes with `0xC0000236`.
+- `sub_F1006660`: walks the isoch transfer buffer in **512-byte packets**
+  (`v5`=VA from slot+40, `v4`=length from slot+36); per packet:
+  1. `(*(ext+19792))(&ctx)` — parser callback, returns payload length;
+  2. optional filter callbacks `(*(ext+1648))(...)` / `(*(ext+19808))(...)`;
+  3. two internal consumers at `ext+696` (fill IN ring state ext+8..32) and
+     `ext+704` (scratch ext+352..376, 1016 B);
+  4. **fan-out**: for each registered stream slot in the pool at `ext+11216`
+     (count `ext+11232`), `sub_F1017340(slot, payload, len)` — the zero-copy
+     ring write of §5.1.
+  Then re-arms (`sub_F1005FF0`) and `sub_F1021CC0` (housekeeping). USB-stall
+  status (-1073741667 = 0xC0000... DEVICE_*) or reset path takes
+  `sub_F1015A30` + `sub_F1011AB0(2,0)` (resync) instead.
+
 ## 6. Windows 10/11 compatibility notes (verified)
 
 - Legacy USBD interface (3 imports) — deprecated but present on Win10/11; portable.
