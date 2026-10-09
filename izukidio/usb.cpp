@@ -90,54 +90,62 @@ EXTERN_C NTSTATUS Izk_UsbConfigure(PIZUK_DEVICE_EXTENSION dx)
         return status;
     }
 
-    // Read config descriptor (PCM2902 exposes a single configuration).
+    // Read config descriptor header (9 B) to learn wTotalLength, then the
+    // full configuration. Buffers are pool-allocated - the descriptor bytes
+    // must not overwrite the dx->ConfigDescriptor pointer itself.
     urb = (PURB)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(struct _URB_CONTROL_DESCRIPTOR_REQUEST), IZUK_TAG);
     if (urb == nullptr) {
         return STATUS_INSUFFICIENT_RESOURCES;
     }
-    UsbBuildGetDescriptorRequest(urb,
-                                 (USHORT)sizeof(struct _URB_CONTROL_DESCRIPTOR_REQUEST),
-                                 USB_CONFIGURATION_DESCRIPTOR_TYPE, 0, 0,
-                                 nullptr, &dx->ConfigDescriptor, sizeof(USB_CONFIGURATION_DESCRIPTOR), nullptr);
-    status = Izk_UsbSendUrbSync(dx, urb);
+    {
+        USB_CONFIGURATION_DESCRIPTOR cfgHeader;
+        RtlZeroMemory(&cfgHeader, sizeof(cfgHeader));
+        UsbBuildGetDescriptorRequest(urb,
+                                     (USHORT)sizeof(struct _URB_CONTROL_DESCRIPTOR_REQUEST),
+                                     USB_CONFIGURATION_DESCRIPTOR_TYPE, 0, 0,
+                                     &cfgHeader, nullptr, sizeof(cfgHeader), nullptr);
+        status = Izk_UsbSendUrbSync(dx, urb);
+        if (NT_SUCCESS(status) && cfgHeader.wTotalLength >= sizeof(cfgHeader)) {
+            dx->ConfigDescriptor = (PUSB_CONFIGURATION_DESCRIPTOR)ExAllocatePool2(
+                POOL_FLAG_NON_PAGED, cfgHeader.wTotalLength, IZUK_TAG);
+            if (dx->ConfigDescriptor == nullptr) {
+                status = STATUS_INSUFFICIENT_RESOURCES;
+            } else {
+                RtlZeroMemory(dx->ConfigDescriptor, cfgHeader.wTotalLength);
+                UsbBuildGetDescriptorRequest(urb,
+                                             (USHORT)sizeof(struct _URB_CONTROL_DESCRIPTOR_REQUEST),
+                                             USB_CONFIGURATION_DESCRIPTOR_TYPE, 0, 0,
+                                             dx->ConfigDescriptor, nullptr,
+                                             cfgHeader.wTotalLength, nullptr);
+                status = Izk_UsbSendUrbSync(dx, urb);
+                if (!NT_SUCCESS(status)) {
+                    ExFreePoolWithTag(dx->ConfigDescriptor, IZUK_TAG);
+                    dx->ConfigDescriptor = nullptr;
+                }
+            }
+        } else if (NT_SUCCESS(status)) {
+            status = STATUS_INVALID_DEVICE_STATE;
+        }
+    }
     ExFreePoolWithTag(urb, IZUK_TAG);
     if (!NT_SUCCESS(status)) {
         return status;
     }
 
-    // Fetch full configuration (all interfaces/alternates).
-    urb = (PURB)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(struct _URB_CONTROL_DESCRIPTOR_REQUEST), IZUK_TAG);
-    if (urb == nullptr) {
-        return STATUS_INSUFFICIENT_RESOURCES;
-    }
-    UsbBuildGetDescriptorRequest(urb,
-                                 (USHORT)sizeof(struct _URB_CONTROL_DESCRIPTOR_REQUEST),
-                                 USB_CONFIGURATION_DESCRIPTOR_TYPE, 0, 0,
-                                 nullptr, &dx->ConfigDescriptor, dx->ConfigDescriptor->wTotalLength, nullptr);
-    status = Izk_UsbSendUrbSync(dx, urb);
-    ExFreePoolWithTag(urb, IZUK_TAG);
-    if (!NT_SUCCESS(status)) {
-        return status;
-    }
-
-    // Select configuration with the audio streaming interface at alternate 0.
-    // The original picks explicit (number, alternate) pairs, incl. alternate 1 for
-    // streaming (research 01 §6: sub_F102BA80 alt-setting walk).
+    // Select the configuration with the audio streaming interface at alternate 0
+    // (PCM2902: interface 0 = audio control, 1 = streaming, 2 = HID; only the
+    // streaming interface is needed here, research 01 §6). Note: USBD always
+    // activates the whole configuration - this picks which interface info is
+    // returned to us.
     RtlZeroMemory(interfaceList, sizeof(interfaceList));
-    wanted[0].Number = 1; wanted[0].Alternate = 0;   // audio control / streaming
-    wanted[1].Number = 2; wanted[1].Alternate = 0;   // second interface (HID/MIDI present on 2902)
+    wanted[0].Number = 1; wanted[0].Alternate = 0;
 
-    urb = (PURB)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(struct _URB_SELECT_CONFIGURATION), IZUK_TAG);
-    if (urb == nullptr) {
-        return STATUS_INSUFFICIENT_RESOURCES;
-    }
-    for (i = 0; i < 2; ++i) {
+    for (i = 0; i < 1; ++i) {
         interfaceList[i].InterfaceDescriptor = USBD_ParseConfigurationDescriptorEx(
             dx->ConfigDescriptor, dx->ConfigDescriptor,
             wanted[i].Number, wanted[i].Alternate, -1, -1, -1);
         if (interfaceList[i].InterfaceDescriptor == nullptr) {
-            // PCM2900 has only one interface; tolerate missing second interface.
-            interfaceList[i].InterfaceDescriptor = nullptr;
+            return STATUS_NO_SUCH_DEVICE;
         }
     }
     status = USBD_SelectConfigUrbAllocateAndBuild(dx->UsbdHandle,
