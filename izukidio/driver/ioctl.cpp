@@ -210,10 +210,14 @@ EXTERN_C NTSTATUS Izk_DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Ir
         Irp->IoStatus.Information = 0;
         break;
 
-    case IOCTL_IZUK_GET_POSITION_IN:
-    case IOCTL_IZUK_GET_POSITION_OUT:
-        value32 = (ULONG)(ioctl == IOCTL_IZUK_GET_POSITION_IN ? dx->In.FramesTransferred64
-                                                              : dx->Out.FramesTransferred64);
+    case IOCTL_IZUK_GET_SHARED_COUNT:
+        // Original sub_F1016A60: number of OTHER handles sharing our stream slot.
+        value32 = (ctx != nullptr && ctx->ClientPid != 0) ? 1 : 0;   // PoC: single client
+        status = CopyOut(Irp, &value32, 4, outLen);
+        break;
+
+    case IOCTL_IZUK_GET_POSITION:
+        value32 = (ULONG)dx->Out.FramesTransferred64;
         status = CopyOut(Irp, &value32, 4, outLen);
         break;
 
@@ -225,11 +229,12 @@ EXTERN_C NTSTATUS Izk_DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Ir
         break;
 
     case IOCTL_IZUK_READ_STREAM:
+    case IOCTL_IZUK_READ_STREAM_ALT:
     case IOCTL_IZUK_WRITE_STREAM:
-        // PCM data plane: copy between user buffer and the isoch ring.
-        // NOTE (ponytail): single-threaded copy path for PoC; original uses
-        // registered event + zero-copy. Rework when measuring latency.
-        status = STATUS_NOT_IMPLEMENTED;    // wire up after isoch bring-up
+        // PCM copy plane (0x2200C0/C4/C8). The ASIO DLL never calls these - the
+        // zero-copy path is the 0x220030 shared-area registration (research 03
+        // §3). Left NOT_IMPLEMENTED until a client for them shows up.
+        status = STATUS_NOT_IMPLEMENTED;
         break;
 
     case IOCTL_IZUK_GET_STREAMINFO:
