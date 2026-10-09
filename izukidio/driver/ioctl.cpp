@@ -142,16 +142,22 @@ EXTERN_C NTSTATUS Izk_DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Ir
         break;
 
     case IOCTL_IZUK_SET_PARAM:
+        // Original sub_F100FEC0: stream-unit parameter, clamped >= 1
+        // (stored at ext+7264) - NOT an alternate-setting selector.
         if (inLen != 4) { status = STATUS_INVALID_PARAMETER; break; }
         RtlCopyMemory(&value32, Irp->AssociatedIrp.SystemBuffer, 4);
-        status = Izk_UsbSelectAlternate(dx, (UCHAR)min(value32, 1));
+        if (value32 < 1) { value32 = 1; }
+        dx->StreamUnitParam = value32;
+        status = STATUS_SUCCESS;
         Irp->IoStatus.Information = 0;
         break;
 
     case IOCTL_IZUK_STOP_CYCLE:
+        // Original: abort pipes, tear down, then IOCTL_INTERNAL_USB_CYCLE_PORT
+        // to the USB PDO (port cycle re-enumerates the device, research 01 §3).
         Izk_IsoStop(dx, TRUE);
         Izk_IsoStop(dx, FALSE);
-        status = STATUS_SUCCESS;
+        status = Izk_UsbCyclePort(dx);
         Irp->IoStatus.Information = 0;
         break;
 

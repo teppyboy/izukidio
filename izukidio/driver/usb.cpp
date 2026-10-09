@@ -156,6 +156,36 @@ EXTERN_C NTSTATUS Izk_UsbConfigure(PIZUK_DEVICE_EXTENSION dx)
     return status;
 }
 
+// IOCTL_INTERNAL_USB_CYCLE_PORT (0x22001F) to the USB PDO: makes the hub
+// driver re-enumerate the device, mirroring the original stop path (research
+// 01 §3: sub_F10203E0, waits out STATUS_PENDING).
+EXTERN_C NTSTATUS Izk_UsbCyclePort(PIZUK_DEVICE_EXTENSION dx)
+{
+    KEVENT event;
+    IO_STATUS_BLOCK iosb;
+    PIRP irp;
+    NTSTATUS status;
+
+    KeInitializeEvent(&event, NotificationEvent, FALSE);
+    irp = IoBuildDeviceIoControlRequest(0x22001F,   // IOCTL_INTERNAL_USB_CYCLE_PORT
+                                        dx->LowerDevice,
+                                        nullptr, 0,
+                                        nullptr, 0,
+                                        TRUE,
+                                        &event,
+                                        &iosb);
+    if (irp == nullptr) {
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+    status = IoCallDriver(dx->LowerDevice, irp);
+    if (status == STATUS_PENDING) {
+        KeWaitForSingleObject(&event, Executive, KernelMode, FALSE, nullptr);
+        status = iosb.Status;
+    }
+    DbgPrint("IZUKIDIO: cycle port status %08X\n", status);
+    return STATUS_SUCCESS;  // original treats cycle result as informational
+}
+
 EXTERN_C void Izk_UsbUnconfigure(PIZUK_DEVICE_EXTENSION dx)
 {
     if (dx->ConfigDescriptor != nullptr) {

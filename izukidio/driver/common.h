@@ -63,6 +63,7 @@ typedef struct _IZUK_DEVICE_EXTENSION {
     ULONG               MaxPacketOut;
 
     ULONG               SampleRate;         // 44100 / 48000
+    ULONG               StreamUnitParam;    // IOCTL 0x220018 value, clamped >= 1
     ULONG               BytesPerSample;     // 2 or 3 (24-bit padded in 4-byte slots)
     ULONG               ChannelsIn;
     ULONG               ChannelsOut;
@@ -105,6 +106,7 @@ void     Izk_UsbUnconfigure(PIZUK_DEVICE_EXTENSION dx);
 NTSTATUS Izk_UsbSelectAlternate(PIZUK_DEVICE_EXTENSION dx, UCHAR alternateSetting);
 NTSTATUS Izk_UsbSetSampleRate(PIZUK_DEVICE_EXTENSION dx, ULONG sampleRate);
 NTSTATUS Izk_UsbSendUrbSync(PIZUK_DEVICE_EXTENSION dx, PURB Urb);
+NTSTATUS Izk_UsbCyclePort(PIZUK_DEVICE_EXTENSION dx);
 
 // isoch.cpp
 NTSTATUS Izk_IsoStart(PIZUK_DEVICE_EXTENSION dx, BOOLEAN inbound);
