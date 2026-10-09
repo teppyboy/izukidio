@@ -166,15 +166,21 @@ EXTERN_C NTSTATUS Izk_DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Ir
         Irp->IoStatus.Information = 0;
         break;
 
-    case IOCTL_IZUK_FILE_STATUS:
-        // 16 B per-handle status; DLL reads latency/clock info.
-        if (outLen != IZUK_FILE_STATUS_SIZE || ctx == nullptr) {
-            status = STATUS_INVALID_PARAMETER; break;
+    case IOCTL_IZUK_SHARED_AREA:
+        // 16 B descriptor: [0] = register(1)/unregister(0), +8 = user VA of the
+        // 0x189C38 ASIO shared area (research 03 §3).
+        if (inLen != 16 || ctx == nullptr) {
+            status = STATUS_INVALID_PARAMETER;
+            break;
         }
         {
-            ULONG st[4] = { ctx->Position, ctx->Slot, dx->TransportActive ? 1 : 0, 0 };
-            status = CopyOut(Irp, st, sizeof(st), outLen);
+            ULONG flag = 0;
+            PVOID userVa = nullptr;
+            RtlCopyMemory(&flag, Irp->AssociatedIrp.SystemBuffer, 4);
+            RtlCopyMemory(&userVa, (PUCHAR)Irp->AssociatedIrp.SystemBuffer + 8, 8);
+            status = Izk_SharedAreaRegister(dx, ctx, flag != 0, userVa);
         }
+        Irp->IoStatus.Information = 0;
         break;
 
     case IOCTL_IZUK_GET_SAMPLE_CLOCK:

@@ -26,7 +26,7 @@ DEFINE_GUID(IZUK_DEVICE_INTERFACE,
 #define IOCTL_IZUK_SET_PARAM         0x220018   // IN:  4 B parameter (min 1) -> stream unit
 #define IOCTL_IZUK_STOP_CYCLE        0x22001C   // stop + IOCTL_INTERNAL_USB_CYCLE_PORT re-enum
 #define IOCTL_IZUK_SET_PARAM_BLOCK   0x220024   // IN:  24 B parameter block
-#define IOCTL_IZUK_FILE_STATUS       0x220030   // OUT: 16 B per-\IO-handle status block
+#define IOCTL_IZUK_SHARED_AREA       0x220030   // 16 B: [0]=register flag, +8=user VA of shared area
 #define IOCTL_IZUK_GET_SAMPLE_CLOCK  0x220038   // OUT: 8 B 64-bit sample clock (latched)
 #define IOCTL_IZUK_GET_VERSION       0x22004C   // OUT: 4 B = 0x0CE5 (3301, magic shared with busbwdm)
 #define IOCTL_IZUK_SET_ROUTING_IN    0x220064   // IN:  3844 B routing/matrix table (input side)
@@ -70,6 +70,12 @@ typedef struct _IZUK_PROPERTY_STRUCT {
 } IZUK_PROPERTY_STRUCT, *PIZUK_PROPERTY_STRUCT;
 #define IZUK_STREAMINFO_SIZE           64
 #define IZUK_HWINFO_SIZE               16
-#define IZUK_FILE_STATUS_SIZE          16
+#define IZUK_SHARED_DESC_SIZE          16
 #define IZUK_MAGIC_VERSION        0x0CE5
 #define IZUK_MAGIC_BUILD       0x0207A800
+
+// ASIO shared area registered via 0x220030 (research 03 §3): two 806,912-byte
+// engine rings + 56-byte tail. Kernel reads event/thread HANDLEs from the tail.
+#define IZUK_SHARED_AREA_SIZE      0x189C38
+#define IZUK_SHARED_EVENT_OFFS    1612824
+#define IZUK_SHARED_THREAD_OFFS   1612832

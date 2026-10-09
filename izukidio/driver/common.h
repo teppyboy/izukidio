@@ -26,6 +26,23 @@
 #define IZUK_ISO_PACKETS_PER_URB 8          // USB full-speed: 1 ms frames; pack 8 ms per URB
 #define IZUK_MAX_CHANNELS      8
 
+// Per-open context (FsContext). Registered \IO clients own the ASIO
+// shared area (research 03 §3).
+typedef struct _IZUK_FILE_CONTEXT {
+    LONG    OpenKind;           // IZUK_OPEN_* (device.cpp)
+    LONG    Slot;               // stream slot index (original: per-file +84)
+    BOOLEAN FileReady;          // original m_bIsFileReady (IOCTL 0x2200A0)
+    ULONG   ClientPid;          // registered via IOCTL 0x2200B0
+    ULONG   Position;           // per-handle position latch
+    PMDL    SharedMdl;          // locked ASIO shared area (0x220030)
+    PVOID   SharedKernelVa;     // kernel mapping of SharedMdl
+} IZUK_FILE_CONTEXT, *PIZUK_FILE_CONTEXT;
+
+// device.cpp shared-area registration (IOCTL 0x220030, research 03 §3).
+void     Izk_SharedAreaUnregister(PIZUK_DEVICE_EXTENSION dx, PIZUK_FILE_CONTEXT ctx);
+NTSTATUS Izk_SharedAreaRegister(PIZUK_DEVICE_EXTENSION dx, PIZUK_FILE_CONTEXT ctx,
+                                BOOLEAN registerArea, PVOID userVa);
+
 // One isochronous endpoint engine (IN = capture, OUT = render).
 typedef struct _IZUK_ISO_ENDPOINT {
     USBD_PIPE_HANDLE    PipeHandle;
@@ -74,6 +91,8 @@ typedef struct _IZUK_DEVICE_EXTENSION {
     LARGE_INTEGER       SampleClock;        // 64-bit sample position (IOCTL 0x2200BC/0x220038)
     LONG                StreamingClients;   // registered PIDs (IOCTL 0x2200B0)
     KEVENT              ClientEvent;        // completion event signaled per buffer period
+    PKEVENT             AsioEvent;          // referenced user event (shared-area tail)
+    PKTHREAD            AsioThread;         // referenced ASIO feeder thread
     BOOLEAN             TransportActive;
 
     IZUK_ISO_ENDPOINT   In;                 // capture engine

@@ -10,14 +10,6 @@ static const PCWSTR IzkOpenNames[] = {
 #define IZUK_OPEN_CONTROL 1
 #define IZUK_OPEN_FWUPD   2
 
-typedef struct _IZUK_FILE_CONTEXT {
-    LONG    OpenKind;           // IZUK_OPEN_*
-    LONG    Slot;               // stream slot index (original: per-file +84)
-    BOOLEAN FileReady;          // original m_bIsFileReady (IOCTL 0x2200A0)
-    ULONG   ClientPid;          // registered via IOCTL 0x2200B0
-    ULONG   Position;           // per-handle position latch
-} IZUK_FILE_CONTEXT, *PIZUK_FILE_CONTEXT;
-
 // Start-device lower-stack wait: completion routine signals the caller event
 // and holds the IRP (STATUS_MORE_PROCESSING_REQUIRED) until we complete it.
 static NTSTATUS IzkPnpStartCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context)
@@ -26,6 +18,101 @@ static NTSTATUS IzkPnpStartCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVO
     UNREFERENCED_PARAMETER(Irp);
     KeSetEvent((PKEVENT)Context, IO_NO_INCREMENT, FALSE);
     return STATUS_MORE_PROCESSING_REQUIRED;
+}
+
+// --- ASIO shared-area registration (IOCTL 0x220030, research 03 §3) ---
+// The DLL owns a 0x189C38-byte user buffer (two engine rings + tail with a
+// manual-reset event HANDLE and its feeder-thread HANDLE). We lock the buffer,
+// map it into kernel space, reference the event (signaled from the isoch
+// completion path) and boost the thread to priority 31 - mirroring the
+// original sub_F1017660/sub_F10340B0.
+static VOID IzkSharedTeardown(PIZUK_DEVICE_EXTENSION dx, PIZUK_FILE_CONTEXT ctx)
+{
+    if (dx->AsioThread != nullptr) {
+        ObDereferenceObject(dx->AsioThread);
+        dx->AsioThread = nullptr;
+    }
+    if (dx->AsioEvent != nullptr) {
+        KeResetEvent(dx->AsioEvent);
+        ObDereferenceObject(dx->AsioEvent);
+        dx->AsioEvent = nullptr;
+    }
+    if (ctx->SharedMdl != nullptr) {
+        if (ctx->SharedKernelVa != nullptr) {
+            MmUnmapLockedPages(ctx->SharedKernelVa, ctx->SharedMdl);
+            ctx->SharedKernelVa = nullptr;
+        }
+        MmUnlockPages(ctx->SharedMdl);
+        IoFreeMdl(ctx->SharedMdl);
+        ctx->SharedMdl = nullptr;
+    }
+}
+
+void Izk_SharedAreaUnregister(PIZUK_DEVICE_EXTENSION dx, PIZUK_FILE_CONTEXT ctx)
+{
+    IzkSharedTeardown(dx, ctx);
+}
+
+NTSTATUS Izk_SharedAreaRegister(PIZUK_DEVICE_EXTENSION dx, PIZUK_FILE_CONTEXT ctx,
+                                BOOLEAN registerArea, PVOID userVa)
+{
+    PVOID kernelVa;
+    HANDLE userEvent, userThread;
+    NTSTATUS status;
+
+    if (!registerArea) {
+        Izk_SharedAreaUnregister(dx, ctx);
+        return STATUS_SUCCESS;
+    }
+    if (userVa == nullptr) {
+        return STATUS_INVALID_PARAMETER;
+    }
+    if (ctx->SharedMdl != nullptr) {
+        return STATUS_SUCCESS;  // already registered on this handle
+    }
+
+    ctx->SharedMdl = IoAllocateMdl(userVa, IZUK_SHARED_AREA_SIZE, FALSE, FALSE, nullptr);
+    if (ctx->SharedMdl == nullptr) {
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+    __try {
+        MmProbeAndLockPages(ctx->SharedMdl, UserMode, IoModifyAccess);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        status = GetExceptionCode();
+        IoFreeMdl(ctx->SharedMdl);
+        ctx->SharedMdl = nullptr;
+        return status;
+    }
+
+    kernelVa = MmMapLockedPagesSpecifyCache(ctx->SharedMdl, KernelMode, MmCached,
+                                            nullptr, FALSE, NormalPagePriority);
+    if (kernelVa == nullptr) {
+        Izk_SharedAreaUnregister(dx, ctx);
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+    ctx->SharedKernelVa = kernelVa;
+
+    userEvent = *(HANDLE*)((PUCHAR)kernelVa + IZUK_SHARED_EVENT_OFFS);
+    userThread = *(HANDLE*)((PUCHAR)kernelVa + IZUK_SHARED_THREAD_OFFS);
+
+    if (userEvent != nullptr) {
+        status = ObReferenceObjectByHandle(userEvent, EVENT_MODIFY_STATE, nullptr,
+                                           UserMode, (PVOID*)&dx->AsioEvent, nullptr);
+        if (!NT_SUCCESS(status)) {
+            dx->AsioEvent = nullptr;
+        }
+    }
+    if (userThread != nullptr) {
+        status = ObReferenceObjectByHandle(userThread, THREAD_SET_INFORMATION, nullptr,
+                                           UserMode, (PVOID*)&dx->AsioThread, nullptr);
+        if (NT_SUCCESS(status)) {
+            // Original boosts the ASIO feeder thread to priority 31.
+            KeSetPriorityThread(dx->AsioThread, 31);
+        } else {
+            dx->AsioThread = nullptr;
+        }
+    }
+    return STATUS_SUCCESS;
 }
 
 static NTSTATUS IzkCreate(PDEVICE_OBJECT DeviceObject, PIRP Irp)
@@ -89,6 +176,7 @@ static NTSTATUS IzkClose(PDEVICE_OBJECT DeviceObject, PIRP Irp)
     iosl = IoGetCurrentIrpStackLocation(Irp);
     ctx = (PIZUK_FILE_CONTEXT)iosl->FileObject->FsContext;
     if (ctx != nullptr) {
+        Izk_SharedAreaUnregister(dx, ctx);
         if (ctx->ClientPid != 0) {
             InterlockedDecrement(&dx->StreamingClients);
         }

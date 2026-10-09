@@ -74,7 +74,11 @@ static VOID IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Cont
     // Advance the sample clock by the frames actually transferred.
     if (NT_SUCCESS(Irp->IoStatus.Status)) {
         InterlockedAdd64(&ep->FramesTransferred64, (LONG64)ep->FramesPerUrb);
-        dx->SampleClock.QuadPart = ep->FramesTransferred64 * (ep->Inbound ? 1 : 1);
+        dx->SampleClock.QuadPart = ep->FramesTransferred64;
+        // Wake the ASIO client (registered event via 0x220030, research 03 §3).
+        if (dx->AsioEvent != nullptr) {
+            KeSetEvent(dx->AsioEvent, IO_NO_INCREMENT, FALSE);
+        }
     }
 
     if (ep->Active) {
