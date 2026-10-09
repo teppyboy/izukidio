@@ -1,0 +1,22 @@
+# OS / editor noise
+.DS_Store
+
+# Local agent-environment state (installed skills are environment, not project)
+.agents/
+.claude/
+.claude/*
+skills-lock.json
+
+# Reverse-engineering scratch / large IDA databases (regenerable from binaries)
+.ida-dbs/
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+*.i64
+
+# Build output
+izukidio/build/
+*.vcxproj.user
+x64/
