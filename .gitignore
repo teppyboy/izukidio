@@ -27,3 +27,6 @@ x64/
 # Local-only analysis tooling (WDK type shims for clangd on non-Windows hosts)
 .local/
 .clangd
+
+# pi coding agent local config
+.pi-lens.json
