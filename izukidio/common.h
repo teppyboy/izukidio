@@ -53,6 +53,7 @@ typedef struct _IZUK_DEVICE_EXTENSION {
     PUSB_DEVICE_DESCRIPTOR          DeviceDescriptor;
     PUSB_CONFIGURATION_DESCRIPTOR   ConfigDescriptor;
     PUSBD_INTERFACE_INFORMATION     InterfaceInfo;      // selected audio alt setting
+    PUSBD_INTERFACE_INFORMATION     CaptureInterfaceInfo; // capture (IF2 EP 0x84 IN) interface from SELECT_CONFIGURATION
     UCHAR           AudioInterfaceNumber;
     UCHAR           AudioAlternateSetting;
 
