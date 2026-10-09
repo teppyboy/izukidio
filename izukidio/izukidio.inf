@@ -1,0 +1,55 @@
+; izukidio.inf - experimental reimplementation of the Behringer USB Audio
+; 2.8.40 function driver (busb2902.sys) for USB\VID_08BB&PID_2900/2902
+; (TI PCM2902). Requires testsigning on Windows 10/11 x64:
+;   bcdedit /set testsigning on
+; Build the .sys first, then:  pnputil /add-driver izukidio.inf /install
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = USB
+ClassGuid   = {36FC9E60-C465-11CF-8056-444553540000}
+Provider    = %ProviderName%
+CatalogFile = izukidio.cat
+DriverVer   = 10/09/2025,2.8.40.1
+PnpLockdown = 1
+
+[SourceDisksNames]
+1 = %DiskName%,,,
+
+[SourceDisksFiles]
+izukidio.sys = 1
+
+[DestinationDirs]
+Izk_CopyFiles = 12   ; %windir%\system32\drivers
+
+[Manufacturer]
+%ManufacturerName% = Standard, NTamd64
+
+[Standard.NTamd64]
+%DeviceName2900% = Izk_Install, USB\VID_08BB&PID_2900
+%DeviceName2902% = Izk_Install, USB\VID_08BB&PID_2902
+
+[Izk_Install]
+CopyFiles = Izk_CopyFiles
+
+[Izk_Install.Services]
+AddService = izukidio, 0x00000002, Izk_Service   ; SPSVCSINST_STARTSERVICE not set:
+                                                 ; the stack starts on PnP start
+
+[Izk_Service]
+DisplayName    = %ServiceName%
+ServiceType    = 1                ; SERVICE_KERNEL_DRIVER
+StartType      = 3                ; SERVICE_DEMAND_START (PnP loads on attach)
+ErrorControl   = 1
+ServiceBinary  = %12%\izukidio.sys
+
+[Izk_CopyFiles]
+izukidio.sys,,,0x00000040       ; COPYFLG_NO_VERSION_DIALOG
+
+[Strings]
+ProviderName    = "izukidio project"
+ManufacturerName= "izukidio project"
+DiskName        = "izukidio installation disk"
+DeviceName2900  = "Behringer USB Audio (PCM2902, reimplementation)"
+DeviceName2902  = "Behringer USB Audio 2.8.40 (reimplementation)"
+ServiceName     = "izukidio USB Audio Driver"
