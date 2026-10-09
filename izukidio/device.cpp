@@ -46,6 +46,9 @@ static VOID IzkSharedTeardown(PIZUK_DEVICE_EXTENSION dx, PIZUK_FILE_CONTEXT ctx)
         IoFreeMdl(ctx->SharedMdl);
         ctx->SharedMdl = nullptr;
     }
+    dx->AsioSharedVa = nullptr;
+    dx->AsioEvent = nullptr;
+    dx->AsioThread = nullptr;
 }
 
 void Izk_SharedAreaUnregister(PIZUK_DEVICE_EXTENSION dx, PIZUK_FILE_CONTEXT ctx)
@@ -91,6 +94,7 @@ NTSTATUS Izk_SharedAreaRegister(PIZUK_DEVICE_EXTENSION dx, PIZUK_FILE_CONTEXT ct
         return STATUS_INSUFFICIENT_RESOURCES;
     }
     ctx->SharedKernelVa = kernelVa;
+    dx->AsioSharedVa = kernelVa;   // engine A at +0, engine B at +IZUK_ENGINE_SIZE
 
     userEvent = *(HANDLE*)((PUCHAR)kernelVa + IZUK_SHARED_EVENT_OFFS);
     userThread = *(HANDLE*)((PUCHAR)kernelVa + IZUK_SHARED_THREAD_OFFS);

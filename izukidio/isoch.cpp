@@ -11,6 +11,77 @@ static VOID IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Cont
 // Wrap-around helper: index in [0, count)
 #define NEXT_SLOT(i) (((i) + 1) % IZUK_MAX_ISO_URBS)
 
+// ASIO shared-area ring access (research 03 §3.1–3.2, byte-exact port of
+// busb2902.sys sub_F1007B30). Engine = dword array: [0]=writeIndex, [1]=readIndex,
+// [2]=totalWritten (position counter), [3..]=ring of 201600 dwords.
+// Capture (kernel→user) writes engine B (sharedVa+IZUK_ENGINE_SIZE);
+// playback (user→kernel) drains engine A (sharedVa+0).
+static ULONG Izk_RingWrite(PULONG engine, const PUCHAR data, ULONG lenDwords)
+{
+    ULONG n = lenDwords;
+    ULONG freeDwords;
+    PULONG ring = engine + 3;
+
+    if (lenDwords > IZUK_RING_DWORDS - engine[2]) {   // clamp by accumulator (verbatim)
+        n = IZUK_RING_DWORDS - engine[2];
+    }
+    freeDwords = IZUK_RING_DWORDS - engine[0];
+    if (freeDwords < n) {
+        if (data != nullptr) {
+            if (freeDwords != 0) {
+                RtlCopyMemory(&ring[engine[0]], data, 4 * freeDwords);
+            }
+            RtlCopyMemory(ring, data + 4 * freeDwords, 4 * (n - freeDwords));
+        }
+        engine[0] = n - freeDwords;
+    } else {
+        if (data != nullptr) {
+            RtlCopyMemory(&ring[engine[0]], data, 4 * n);
+        }
+        engine[0] += n;
+        if (engine[0] >= IZUK_RING_DWORDS) {
+            engine[0] = 0;
+        }
+    }
+    InterlockedAdd((volatile LONG*)&engine[2], (LONG)n);
+    return n;
+}
+
+// Mirror of the write path for draining the playback ring (user-written,
+// kernel-consumed): reads from readIndex, never overtakes writeIndex.
+static ULONG Izk_RingRead(PULONG engine, PUCHAR dst, ULONG lenDwords)
+{
+    ULONG n = lenDwords;
+    ULONG first;
+    PULONG ring = engine + 3;
+    ULONG avail = (engine[0] + IZUK_RING_DWORDS - engine[1]) % IZUK_RING_DWORDS;
+
+    if (n > avail) {
+        n = avail;
+    }
+    first = IZUK_RING_DWORDS - engine[1];
+    if (first > n) {
+        first = n;
+    }
+    RtlCopyMemory(dst, &ring[engine[1]], 4 * first);
+    if (n > first) {
+        RtlCopyMemory(dst + 4 * first, ring, 4 * (n - first));
+    }
+    engine[1] = (engine[1] + n) % IZUK_RING_DWORDS;
+    return n;
+}
+
+// Account dropped capture bytes into tail+28 (research 03 §3.2,
+// sub_F1017340 overflow accounting; frame size 4 bytes per dword slot).
+static VOID Izk_AddOverflow(PIZUK_DEVICE_EXTENSION dx, ULONG droppedDwords)
+{
+    volatile LONG* p = (volatile LONG*)((PUCHAR)dx->AsioSharedVa
+                                        + IZUK_SHARED_TAIL_OFFSET + IZUK_TAIL_OVERFLOW_OFFS);
+    if (droppedDwords != 0) {
+        InterlockedAdd(p, -(LONG)droppedDwords);
+    }
+}
+
 static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOINT ep, ULONG slot)
 {
     PURB urb;
@@ -23,6 +94,14 @@ static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOI
     RtlZeroMemory(urb, urbSize);
 
     mdl = ep->Mdl[slot];
+
+    // Playback: pull this buffer's samples out of the user ring (engine A)
+    // before submission; shortfall stays zero-filled.
+    if (!ep->Inbound && dx->AsioSharedVa != nullptr) {
+        ULONG dwords = ep->FramesPerUrb * ep->BytesPerFrame / 4;
+        RtlZeroMemory(ep->TransferBuffer[slot], ep->FramesPerUrb * ep->BytesPerFrame);
+        Izk_RingRead((PULONG)dx->AsioSharedVa, ep->TransferBuffer[slot], dwords);
+    }
 
     urb->UrbIsochronousTransfer.Hdr.Length = (USHORT)urbSize;
     urb->UrbIsochronousTransfer.Hdr.Function = URB_FUNCTION_ISOCH_TRANSFER;
@@ -75,7 +154,15 @@ static VOID IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Cont
     if (NT_SUCCESS(Irp->IoStatus.Status)) {
         InterlockedAdd64(&ep->FramesTransferred64, (LONG64)ep->FramesPerUrb);
         dx->SampleClock.QuadPart = ep->FramesTransferred64;
-        // Wake the ASIO client (registered event via 0x220030, research 03 §3).
+        // Publish capture audio into the user ring (engine B) and wake the
+        // ASIO client (registered via 0x220030, research 03 §3).
+        if (ep->Inbound && dx->AsioSharedVa != nullptr) {
+            ULONG dwords = ep->FramesPerUrb * ep->BytesPerFrame / 4;
+            ULONG written = Izk_RingWrite(
+                (PULONG)((PUCHAR)dx->AsioSharedVa + IZUK_ENGINE_SIZE),
+                ep->TransferBuffer[slot], dwords);
+            Izk_AddOverflow(dx, dwords - written);
+        }
         if (dx->AsioEvent != nullptr) {
             KeSetEvent(dx->AsioEvent, IO_NO_INCREMENT, FALSE);
         }

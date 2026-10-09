@@ -76,6 +76,7 @@ typedef struct _IZUK_DEVICE_EXTENSION {
     KEVENT              ClientEvent;        // completion event signaled per buffer period
     PKEVENT             AsioEvent;          // referenced user event (shared-area tail)
     PKTHREAD            AsioThread;         // referenced ASIO feeder thread
+    PVOID               AsioSharedVa;       // kernel mapping of the shared area (engine A at +0)
     BOOLEAN             TransportActive;
 
     IZUK_ISO_ENDPOINT   In;                 // capture engine

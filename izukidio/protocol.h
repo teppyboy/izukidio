@@ -74,8 +74,15 @@ typedef struct _IZUK_PROPERTY_STRUCT {
 #define IZUK_MAGIC_VERSION        0x0CE5
 #define IZUK_MAGIC_BUILD       0x0207A800
 
-// ASIO shared area registered via 0x220030 (research 03 §3): two 806,912-byte
-// engine rings + 56-byte tail. Kernel reads event/thread HANDLEs from the tail.
+// ASIO shared area registered via 0x220030 (research 03 §3, byte-exact):
+// two engine objects (12-byte header + 201,600-dword ring) + 32-byte tail.
 #define IZUK_SHARED_AREA_SIZE      0x189C38
-#define IZUK_SHARED_EVENT_OFFS    1612824
-#define IZUK_SHARED_THREAD_OFFS   1612832
+#define IZUK_ENGINE_HEADER_SIZE        12
+#define IZUK_RING_DWORDS            201600   // 0x31380 dwords = 0xC4E00 bytes
+#define IZUK_RING_BYTES             (IZUK_RING_DWORDS * 4)
+#define IZUK_ENGINE_SIZE            (IZUK_ENGINE_HEADER_SIZE + IZUK_RING_BYTES)  // 0xC4E0C
+#define IZUK_SHARED_TAIL_OFFSET     (2 * IZUK_ENGINE_SIZE)   // 0x189C18
+#define IZUK_SHARED_EVENT_OFFS     1612824   // tail +0
+#define IZUK_SHARED_THREAD_OFFS    1612832   // tail +8
+#define IZUK_SHARED_CONTEXT_OFFS   1612840   // tail +16
+#define IZUK_TAIL_OVERFLOW_OFFS         28   // tail +28, kernel-managed
