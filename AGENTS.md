@@ -35,18 +35,15 @@ Key facts (from research, do not re-derive):
 ## Repository layout
 
 ```
-izukidio/                  <- this directory; the Visual Studio WDK solution
-  izukidio.sln
-  driver/                  <- kernel driver project (izukidio.vcxproj)
-    izukidio.inf           <- driver INF (binds USB\VID_08BB&PID_2900/2902)
-    common.h protocol.h pcm2902.h
-    driver.cpp device.cpp usb.cpp isoch.cpp ioctl.cpp
-  README.md                <- build + deploy instructions (testsigning)
-  tools/clangd-stubs/      <- macOS/clangd-only stub headers for static analysis;
-                              NOT part of the Windows build (real WDK is used there)
+izukidio/                  <- kernel driver project folder (izukidio.vcxproj)
+  common.h protocol.h pcm2902.h
+  driver.cpp device.cpp usb.cpp isoch.cpp ioctl.cpp
+izukidio.sln               <- VS solution (repo root, references izukidio/)
 docs/research/             <- reverse-engineering research (read first, see above)
-BEHRINGER_2902_X64_2.8.40/ <- original driver package (analysis artifacts, .i64 DB)
+BEHRINGER_2902_X64_2.8.40/ <- original driver package (untracked; analysis artifacts)
 docs/research/*.i64        <- saved IDA database for busb2902.sys, reuse it
+.local/wdk-shims/          <- git-ignored clangd shims for macOS static analysis;
+                              NOT part of the Windows build (real WDK is used there)
 ```
 
 ## Conventions
@@ -54,7 +51,7 @@ docs/research/*.i64        <- saved IDA database for busb2902.sys, reuse it
 - Driver: WDM, x64, no CRT dependency beyond ntoskrnl; pool tags `'IZUK'`.
 - Any new kernel/user contract change must be reflected in `docs/research/05-poc-design.md`.
 - The original binaries are reference-only; never load them on modern Windows.
-- **Static analysis on macOS/Linux hosts**: `driver/*` will show `ntddk.h not found`
+- **Static analysis on macOS/Linux hosts**: driver sources will show `ntddk.h not found`
   and cascading unknown-type diagnostics because the Windows Driver Kit is not
   available on those hosts. This is environmental, not a code defect; build and
-  lint on a Windows machine with the WDK + VS2022 instead (see `izukidio/README.md`).
+  lint on a Windows machine with the WDK + VS2022 instead.
