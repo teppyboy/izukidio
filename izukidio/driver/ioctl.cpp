@@ -113,13 +113,17 @@ EXTERN_C NTSTATUS Izk_DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Ir
         break;
 
     case IOCTL_IZUK_GET_STATE:
-        // 98,584 B state dump; the DLL uses only known offsets. PoC zeroes it and
-        // fills the hot fields (ponytail: extend on Windows bring-up failures).
+        // 98,584 B state dump (research 02 §3): 8-byte header + 4 terminal
+        // blocks. busbwdm.sys reads dword [+8] as the per-transaction frame
+        // size. Format tables stay zeroed until hardware bring-up
+        // (ponytail: ASIO needs real 0x6044-blocks; add on first device run).
         if (outLen != IZUK_STATE_DUMP_SIZE) {
             status = STATUS_INVALID_PARAMETER;
             break;
         }
         RtlZeroMemory(Irp->AssociatedIrp.SystemBuffer, outLen);
+        *((ULONG*)((PUCHAR)Irp->AssociatedIrp.SystemBuffer + IZUK_STATE_HEADER_SIZE)) =
+            dx->Out.FramesPerUrb * IZUK_ISO_PACKETS_PER_URB * dx->BytesPerSample;
         Irp->IoStatus.Information = outLen;
         status = STATUS_SUCCESS;
         break;
