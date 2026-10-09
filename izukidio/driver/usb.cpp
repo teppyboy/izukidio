@@ -156,6 +156,37 @@ EXTERN_C NTSTATUS Izk_UsbConfigure(PIZUK_DEVICE_EXTENSION dx)
     return status;
 }
 
+// Pass a client-supplied vendor/class request through to the control pipe
+// (IOCTL 0x220008, research 01 §4).
+EXTERN_C NTSTATUS Izk_UsbVendorClassRequest(PIZUK_DEVICE_EXTENSION dx,
+                                            PIZUK_VENDOR_OR_CLASS_REQUEST req,
+                                            PUCHAR payload, ULONG payloadLen)
+{
+    PURB urb;
+    NTSTATUS status;
+    BOOLEAN inbound = (req->bmRequestType & 0x80) != 0;
+
+    urb = (PURB)ExAllocatePool2(POOL_FLAG_NON_PAGED,
+                                sizeof(struct _URB_CONTROL_VENDOR_OR_CLASS_REQUEST), IZUK_TAG);
+    if (urb == nullptr) {
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+    UsbBuildVendorRequest(urb,
+                          (USHORT)sizeof(struct _URB_CONTROL_VENDOR_OR_CLASS_REQUEST),
+                          inbound ? USBD_TRANSFER_DIRECTION_IN : USBD_TRANSFER_DIRECTION_OUT,
+                          0,                            // reserved bits
+                          req->bRequest,
+                          req->wValue,
+                          req->wIndex,
+                          payload,
+                          nullptr,
+                          payloadLen,
+                          nullptr);
+    status = Izk_UsbSendUrbSync(dx, urb);
+    ExFreePoolWithTag(urb, IZUK_TAG);
+    return status;
+}
+
 // IOCTL_INTERNAL_USB_CYCLE_PORT (0x22001F) to the USB PDO: makes the hub
 // driver re-enumerate the device, mirroring the original stop path (research
 // 01 §3: sub_F10203E0, waits out STATUS_PENDING).

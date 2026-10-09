@@ -276,6 +276,29 @@ EXTERN_C NTSTATUS Izk_DispatchDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Ir
         Irp->IoStatus.Information = inLen;
         break;
 
+    case IOCTL_IZUK_VENDOR_CLASS_REQ: {
+        // 8-byte setup-style header + variable payload -> control URB
+        // (research 01 §4; header struct in pcm2902.h).
+        PIZUK_VENDOR_OR_CLASS_REQUEST req;
+        ULONG payloadLen;
+
+        if (inLen < sizeof(IZUK_VENDOR_OR_CLASS_REQUEST)) {
+            status = STATUS_INVALID_PARAMETER;
+            break;
+        }
+        req = (PIZUK_VENDOR_OR_CLASS_REQUEST)Irp->AssociatedIrp.SystemBuffer;
+        payloadLen = inLen - sizeof(IZUK_VENDOR_OR_CLASS_REQUEST);
+        if (payloadLen != 0 && req->wLength != 0 && payloadLen < req->wLength) {
+            status = STATUS_INVALID_PARAMETER;
+            break;
+        }
+        status = Izk_UsbVendorClassRequest(dx, req,
+                    (PUCHAR)Irp->AssociatedIrp.SystemBuffer + sizeof(IZUK_VENDOR_OR_CLASS_REQUEST),
+                    payloadLen);
+        Irp->IoStatus.Information = (req->bmRequestType & 0x80) ? payloadLen : 0;
+        break;
+    }
+
     case IOCTL_IZUK_SET_ROUTING_IN:
     case IOCTL_IZUK_SET_ROUTING_OUT:
         // 3,844 B routing matrix (research 01 §3: sub_F100F9A0/F960).

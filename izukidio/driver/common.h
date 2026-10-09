@@ -109,6 +109,9 @@ NTSTATUS Izk_UsbSelectAlternate(PIZUK_DEVICE_EXTENSION dx, UCHAR alternateSettin
 NTSTATUS Izk_UsbSetSampleRate(PIZUK_DEVICE_EXTENSION dx, ULONG sampleRate);
 NTSTATUS Izk_UsbSendUrbSync(PIZUK_DEVICE_EXTENSION dx, PURB Urb);
 NTSTATUS Izk_UsbCyclePort(PIZUK_DEVICE_EXTENSION dx);
+NTSTATUS Izk_UsbVendorClassRequest(PIZUK_DEVICE_EXTENSION dx,
+                                   struct _IZUK_VENDOR_OR_CLASS_REQUEST* req,
+                                   PUCHAR payload, ULONG payloadLen);
 
 // isoch.cpp
 NTSTATUS Izk_IsoStart(PIZUK_DEVICE_EXTENSION dx, BOOLEAN inbound);
