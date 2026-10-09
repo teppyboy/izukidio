@@ -59,13 +59,24 @@ static NTSTATUS HandleProperty(PIZUK_DEVICE_EXTENSION dx, PIRP Irp, ULONG inLen,
         p->Arg[2] = p->Arg[0];
         p->Arg[3] = (ULONG)-1;
         break;
+    case 10:    // driver version
+        p->Arg[0] = IZUK_MAGIC_BUILD;
+        break;
+    case 12:    // performance-mode priority names, original order (research 01 §3)
+        // Arg[] space is small; the original returns a name table via strings.
+        // PoC: report index-based priority (0 = "highspeed" ... 5 = "relaxed").
+        p->Arg[0] = 0;
+        break;
+    case 13:    // get priority (research 03 §5: DLL uses 13/14, not 6)
+        p->Arg[0] = 0;
+        break;
+    case 14:    // set priority
+        // PoC: accepted, no scheduling change (we have no feeder thread yet).
+        break;
     case 1:     // stop transport
         Izk_IsoStop(dx, TRUE);
         Izk_IsoStop(dx, FALSE);
         dx->TransportActive = FALSE;
-        break;
-    case 13:
-        p->Arg[0] = dx->ChannelsIn;
         break;
     default:
         status = STATUS_INVALID_PARAMETER;
