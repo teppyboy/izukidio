@@ -257,6 +257,78 @@ IN completion → ring:
   status (-1073741667 = 0xC0000... DEVICE_*) or reset path takes
   `sub_F1015A30` + `sub_F1011AB0(2,0)` (resync) instead.
 
+## 5.3 Isoch URB builder & per-rate pattern (decompiler-verified, resolves 06 §7 Q1/Q2)
+
+`sub_F1022390` — the actual `URB_FUNCTION_ISOCH_TRANSFER` submit helper. Called
+as `(devObj, bufferCtx, startFrame, packetCount, offsetLenTable, streamCtx)`;
+decompiled verbatim semantics (note: Hdr.Length = 152 + 12·packets — the
+driver's URB structs use the 32-bit-compatible layout, which is why x64 offset
+scans find nothing):
+
+```c
+urb->Hdr.Length   = 152 + 12 * a4;              // urb+0x00
+urb->Hdr.Function = 0x0A;                        // urb+0x02 URB_FUNCTION_ISOCH_TRANSFER
+urb->PipeHandle   = streamCtx->pipeHandle;       // urb+0x18 (ctx+64)
+urb->TransferFlags       = 0;                    // urb+0x20 (no ASAP — StartFrame is absolute)
+urb->TransferBuffer      = bufferCtx->va;        // urb+0x28
+urb->StartFrame          = a3;                   // urb+0x80  — absolute, advances per cycle
+urb->NumberOfPackets     = a4;                   // urb+0x84
+for (i = 0; i < a4; ++i) {
+    urb->IsoPacket[i].Offset = running;         // urb+0x8C+12i — exclusive-prefix cumulative
+    urb->IsoPacket[i].Length = table[i];        // urb+0x90+12i — bytes pulled from client queue
+    urb->IsoPacket[i].Status = 0;               // urb+0x94+12i
+    running += table[i];
+}
+urb->TransferBufferLength = running;             // urb+0x24 = Σ request lengths
+```
+
+Key consequences:
+
+- **`IsoPacket[i].Length` at submit = bytes pulled from the client queue for
+  that slot.** Queue starvation yields a real zero-length request packet —
+  there is no dedicated "resync slot". Completion `Length`s are written by the
+  USB stack (device-delivered bytes), which is what the pcap's completion
+  records show (06 §3.1).
+- **No ASAP flag** — `StartFrame` is maintained by the caller:
+  `sub_F1015E10` ends with `*(ext+1788) += *(ext+7264)` (StartFrame +=
+  packetCount per cycle). izukidio's ASAP re-submission is a deliberate
+  divergence (fine on xHCI, revisit if pacing glitches).
+- Packet count per URB = `*(ext+7264)` (×8/÷8 under the USB2 flag ext+5840);
+  measured 10 (10 ms full-speed).
+
+`sub_F1015E10` — per-cycle refill for one direction: pulls per-slot payload
+lengths from the client queue (`sub_F1019990`), builds the length table at
+`ext+6944` (offset column = running total × len), then submits via
+`sub_F1022390` (or `sub_F1021DD0` for the other queue pair), then advances
+StartFrame.
+
+`sub_F1018BE0` — per-rate packet-length pattern generator (DbgPrint:
+`"mNumPattern:%d m_bUSB2:%d"`). Table of dwords at `ext+1668`, copied to the
+active table at `ext+68` (count `mNumPattern` ∈ {120, 56, 400}; envelope
+`ext+28` = base−2 dwords, `ext+32` = base+2):
+
+| Rate | Pattern (per slot) | Bytes/slot |
+|---|---|---|
+| 48000 / 64000 / 96000 / 128000 / 192000 | uniform `rate/1000` dwords | 192 @48k |
+| 44100 | 44 dwords, **+1 dword every 10th** | 176/180 (avg 176.4 = 44.1k × 4 B) |
+| 88200 | 88 dwords, +1 every 5th | avg 352.8 B/ms |
+| 176400 | 176 dwords, +1 every 5th and every 5th offset by 2 | avg 705.6 B/ms |
+| 32000 | uniform 32 | 128 |
+
+44100 Hz is served by **dword-granular inter-slot spacing on the request
+side** (44/44/44/45…), while the measured device-side completion still
+delivers uniform 49-frame packets (06 §3) — the PCM2902 re-chunks itself.
+
+Pools (entry ctor `sub_F10071B0(entry, dev, 0x200, stackDepth)`: 512 B data
+buffer + 640 B URB region, IRP at entry+48):
+
+- IN: 32-entry pool at `ext+17480`, 64 B stride (scan: `sub_F1005FF0` × 32,
+  selector `sub_F1004210`); measured 12 in flight (06 §3).
+- OUT: 4-entry pool at `ext+19528`, 64 B stride (scan: `sub_F1006150` × 4,
+  selector `sub_F1004350`); measured 3 in flight. `sub_F1006150` additionally
+  stamps one byte per 512 B chunk at chunk+480/+481 from queue state —
+  consumer/format bookkeeping ahead of the same submit helper.
+
 ## 6. Windows 10/11 compatibility notes (verified)
 
 - Legacy USBD interface (3 imports) — deprecated but present on Win10/11; portable.

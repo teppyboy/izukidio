@@ -76,10 +76,16 @@ for *other* alt settings, not for the 48 kHz PoC path.
 | Pipe depth (pool × cycle) | 3 × 10 ms = 30 ms | 12 × 10 ms = 120 ms |
 | Slots per URB | 10 | 10 |
 | URB cycle time | 10 ms (100.4 completions/s) | 10 ms |
-| Slot 0 length | **0 (always)** | **0 (always)** |
-| Slots 1–9, submit side | 192 B each (sum 1728) | 192 B each (sum 1728), rare 188/196 |
-| Slots 1–9, completion side | 192 B each (sum 1728) | **196 B each (sum 1764)** |
-| Data rate (completion) | 172.8 B/ms | 176.4 B/ms |
+| Slots per URB (cnt field) | 10 | 10 |
+| Record `dlen` (Σ per-packet bytes) | **1920** (submit) | **1764** (completion) |
+| Data rate | 192.0 B/ms = **48 kHz exact** | 176.4 B/ms = **44.1 kHz exact** |
+
+**Correction (IDA + re-derivation, see §3.1):** the per-record `dlen` totals —
+not the per-slot "lengths" read out of the iso descriptors — are the
+trustworthy numbers. OUT moves 1920 B / 10 ms (10 × 192, 48 kHz); IN receives
+1764 B / 10 ms (9 × 196 + one zero-length slot, 44.1 kHz). The capture is
+asymmetric: playback ran at the 48 kHz alt rate while capture delivered
+44.1 kHz packetization through the same alt.
 
 The submit/completion asymmetry on IN is the most important single fact in
 this capture: the driver *requests* 192 B per slot but the device *returns*
@@ -87,43 +93,59 @@ this capture: the driver *requests* 192 B per slot but the device *returns*
 occasionally. The 4-byte-per-slot surplus is the "drift headroom" of the
 wMaxPacket=196 descriptor being used *continuously*, not rarely.
 
-### The 9+1 slot pattern
+### The 9+1 slot pattern — RESOLVED (was open question #1)
 
-Both directions use a 10-slot URB where **slot 0 is permanently zero-length**
-and slots 1–9 carry audio. Cumulative end offsets per packet run
-0 → 192/196 → 384/392 → ... → 1728/1764. Three readings of this survive
-contact with the data:
+The earlier reading of this capture was wrong in one detail and right in
+another. Re-derivation plus decompilation of the original's URB builder
+(research 01 §5.3, `sub_F1022390`) settles it:
 
-- **(A) 10 ms URBs, 9 active slots.** IN delivers 176.4 B/ms = **exactly
-  44,100 frames/s × 4 B** (1764/10 ms). The 9×49-frame packet structure
-  (49 × 4 B = 196) delivering 441 frames per 10 ms cycle is *exact* — this
-  is the 44.1 kHz packetization (9 packets of 49 frames + 1 skip slot per
-  10 frames), consistent with the original driver's `wLockDelay = 512`
-  (~11.6 ms at 44.1k) warm-up budget. OUT at 172.8 B/ms = 43.2 kHz does not
-  match a standard rate, which argues against pure (A).
-- **(B) slot 0 is an ASAP-alignment placeholder, 9 ms of data per URB.**
-  OUT = 192 B/ms = exactly 48 kHz ✓. IN = 196 B/ms = 49 kHz ✗.
-- **(C) slot-0 length is a USBPcap reporting artifact** (first iso descriptor
-  of each URB always shown as 0) and the true wire format is 10 × 192/196.
-  OUT = 1920 B/10 ms = exactly 48 kHz ✓; IN = 1960 B/10 ms = 49 kHz ✗ —
-  unless IN slot 0 genuinely never transmits and only IN uses 9+1.
+1. **The +4 field of a USBPcap iso record is the *exclusive-prefix* offset**
+   (`pkt_i.offset = Σ lengths of packets before i`), not a cumulative *end*.
+   Packet 0's offset is therefore **always 0** — the "slot 0 is permanently
+   zero-length" claim was a parse artifact of that convention.
+2. Because offsets are exclusive-prefix, a zero-length slot is only visible
+   as a *missing* increment. IN records show strictly 196-spaced offsets
+   0 → 1764 with `dlen` 1764 = Σ lengths: exactly 9 slots of 196 B (49
+   frames) plus **one zero-length slot at the END of the URB** (a zero
+   anywhere in the middle would repeat one offset). OUT records show
+   strictly 192-spaced offsets 0 → 1728 with `dlen` 1920 = 10 × 192: no zero
+   slot at all.
+3. Submit records show every packet length as 0 — USBPcap captures the
+   driver's submit-side URB where lengths are only *requests*; the
+   re-derivations above are all completion-side. Submit-side request
+   geometry is verified from IDA instead (research 01 §5.3): the driver
+   builds 10-packet URBs with per-packet request length = bytes pulled from
+   the client queue (0 when the queue starves — that is the real mechanism
+   behind zero-length packets), `TransferBufferLength = Σ requests`, and
+   `StartFrame += 10` per cycle.
 
-No single reading makes both directions a standard rate *and* keeps
-submit/completion consistent, so this stays flagged as the #1 open question
-(§7). What is unambiguous regardless of reading:
+What is unambiguous regardless of reading:
 
 1. The original driver runs **10-slot, 10 ms URBs** — not the 4 URB × 8 packet
    model izukidio currently uses (§05-4 divergence 2 is confirmed wrong).
 2. The IN pipe depth is **12 URBs (120 ms)**; OUT is **3 (30 ms)**. This
    matches the original's computed-depth formula direction: IN needs a much
-   deeper queue than OUT.
-3. IN submit descriptors occasionally deviate ±4 B (124 × 188 B, 224 × 196 B
-   among the 30,130 submit slots) — a **one-frame trim** the driver applies to
-   individual packets for clock reconciliation. The device-side completion
-   length stays 196 regardless: the trim lives in the request, not the
-   response.
+   deeper queue than OUT. The submit helper advances `StartFrame` by the
+   packet count each cycle (verified in `sub_F1022390`, research 01 §5.3).
+3. IN submit-side requests are 192 B per slot (48 kHz pattern, `sub_F1018BE0`
+   fills 48 dwords uniform for 48 kHz; rare ±4 B trims, 124 × 188 B among
+   30,130 submit slots — a one-frame trim the driver applies for clock
+   reconciliation). The device *delivers* 196 B per slot regardless: the
+   PCM2902's own packetizer sends 49-frame packets at 44.1 kHz and the USB
+   stack reports them in the completion descriptors, overwriting the request.
 
-### Sample-rate reconciliation
+### Sample-rate reconciliation (updated)
+
+- Capture completion bytes → **44.1 kHz exact** (1764 B / 10 ms URB;
+  9 × 49-frame packets + one zero-length slot).
+- Playback completion bytes → **48 kHz exact** (1920 B / 10 ms; 10 × 192 B).
+
+The session therefore ran capture and playback at *different* effective
+rates through the single 48 kHz alt: the device's IN packetizer re-chunks
+44.1 kHz into 49-frame packets (device-side repack — answers old open
+question #2), while OUT served 48 kHz data as-is. izukidio's IN path must
+trust `IsoPacket[i].Length` at completion (which it now does) and must not
+assume submit request length == delivered length.
 
 - Capture completion bytes → 44,272 Hz-equivalent (2/30.01 s windows) —
   0.4 % above 44.1k, 7.8 % below 48k.
@@ -141,22 +163,24 @@ simplification izukidio currently relies on.
 
 ## 4. What izukidio must change (implementation deltas)
 
-1. **URB geometry**: move to 10-slot, 10 ms URBs with a zero-length slot 0;
-   IN pool 12, OUT pool 3 (or keep depth configurable but default to these).
-   Current `IZUK_MAX_ISO_URBS`-based 4×8 model must go.
-2. **IN slot request length**: request 192 B, allocate 196 B (wMaxPacket) and
-   *publish 49 frames per packet* on completion — the ring writer already
-   handles variable publish sizes (dword = 4-byte frame), but the per-slot
-   publish loop must consume `IsoPacket[i].Length` bytes, not assume 192.
+1. **URB geometry**: 10-slot, 10 ms URBs; IN pool 12, OUT pool 3 (done in
+   izukidio; the earlier "zero-length slot 0" requirement is retracted — see
+   §3.1: there is no slot-0 skip, all 10 slots submit data).
+2. **IN slot request length**: request 192 B (48 kHz pattern), allocate
+   wMaxPacket 196 B per slot, and publish `IsoPacket[i].Length` bytes per
+   packet on completion — the device may deliver 196 B (49 frames) where 192
+   B were requested, and the final slot may complete 0-length.
 3. **Per-packet publish**: ring publish granularity is per iso *packet*, not
    per URB (packets may differ by ±1 frame after trim).
-4. **Sample rate**: do not assume alt-setting == rate. The DLL's SET_PARAM /
-   property path picks a rate; the driver must repack frames for any rate
-   within the alt's declared range (48k alt carries 44.1k fine per this
-   capture).
-5. **Slot-0 semantics**: reserve slot 0 as the drift-correction slot (the
-   original's "skip-4-frames" resync target). Its request length toggles
-   0 ↔ 196 in the original as the resync mechanism.
+4. **Sample rate**: do not assume alt-setting == rate. The device re-chunks
+   44.1 kHz into 49-frame packets on its own (measured §3); izukidio must
+   follow `IsoPacket[i].Length` per completion rather than a fixed frame
+   count per URB. IN and OUT effective rates can differ (this capture: IN
+   44.1 k, OUT 48 k).
+5. **Zero-length slots**: real, but they appear wherever the client queue
+   starves (request side, `sub_F1022390`) or the device has no frame for the
+   slot (completion side, observed as the final IN slot). Handle 0-length
+   packets as "publish nothing", not as a reserved resync slot.
 
 ## 5. Re-derivation script
 
@@ -195,13 +219,19 @@ while True:
 
 ## 7. Open questions (in priority order)
 
-1. **Slot-0 + 9/10-slot reading** (§3): which of A/B/C is real. Next probe:
-   capture with `USBPcap` while forcing a 48 kHz-only session and compare
-   slot fills; or read `sub_F1005FF0` (URB submit) in IDA for the
-   `IsoPacket[0].Length` assignment.
-2. **Where does 44.1 k repack happen** — driver-side slot math or device-side
-   packetization? (Determines whether izukidio must repack or just relay.)
+1. ~~Slot-0 + 9/10-slot reading~~ **ANSWERED (§3.1)**: USBPcap iso +4 field is
+   an exclusive-prefix offset; packet 0 always shows 0. IN = 9 × 196 B + a
+   zero-length final slot; OUT = 10 × 192 B, no zero slot. Submit-side
+   geometry verified from IDA (`sub_F1022390`, research 01 §5.3).
+2. ~~Where does 44.1 k repack happen~~ **ANSWERED (§3)**: device-side. The
+   PCM2902 packetizer emits 49-frame (196 B) IN packets at 44.1 kHz while the
+   host requested 192 B/slot at the 48 kHz alt; izukidio just relays
+   `IsoPacket[i].Length` per completion.
 3. **Trim policy** for the ±4 B submit deviations (188/196 B packets): count
    their temporal distribution (uniform = pacing; clustered = resync bursts).
 4. OUT pool of 3 × 10 ms = 30 ms is shallow; measure underrun behavior when
    host stalls > 30 ms.
+5. **OUT at 44.1 k**: this capture shows OUT running the full 48 kHz pattern
+   while IN ran 44.1 kHz. Verify with a forced 44.1 kHz-only session whether
+   the original ever trims OUT slots (the `sub_F1018BE0` 44 dwords + 1-every-
+   10th pattern table says it can).

@@ -86,14 +86,19 @@ Divergences from the original (deliberate, revisit on hardware bring-up):
 1. Original walks **512-byte packets** with a per-packet payload parser and
    channel DMA encode/decode callbacks; izukidio copies whole-URB payload
    assuming 4-byte slots (`channels × bytesPerSample`, padded to 4).
-2. Original runs **10-slot, 10 ms URBs with a zero-length slot 0** in pools of
-   12 IN / 3 OUT (measured, research 06 §3); izukidio re-submits 4 URBs × 8
-   packets with uniform fills. The slot-0 skip and per-packet publish are not
-   implemented yet — see research 06 §4 for the required deltas.
+2. Original runs **10-slot, 10 ms URBs** in pools of 12 IN / 3 OUT (measured,
+   research 06 §3; submit-side per-slot length = bytes pulled from the client
+   queue — a zero-length slot means starvation, research 01 §5.3). izukidio
+   re-submits 12/3 URBs × 10 packets with ASAP and uniform fills; per-packet
+   completion publish is implemented (06 §3.1). The original uses absolute
+   StartFrame (+10 per cycle) instead of ASAP — divergence kept unless
+   hardware bring-up shows pacing glitches.
 3. Overflow counter is not floored at 0 (original uses `InterlockedExchange`).
 4. Feedback endpoint (`sub_F1013EB0` resync, skip-4-frames) not yet consumed;
    the real UMC22 has **no** feedback endpoint (research 06 §6), so this stays
-   dormant — slot-0 skip is the observed resync mechanism instead.
+   dormant — the original's resync mechanism is per-slot request trims and
+   queue-starvation zero-length packets (research 01 §5.3), not a reserved
+   slot.
 5. **Rate ≠ alternate setting**: the measured session served 44.1 kHz audio
    through the 48 kHz alternate (research 06 §3); izukidio currently fixes the
    rate from the alt. Needs the repack model from 06 §4 before any non-48k
@@ -117,10 +122,9 @@ Divergences from the original (deliberate, revisit on hardware bring-up):
 - **Coexistence with usbaudio.sys**: the INF claims the raw USB device; the
   in-box USB Audio stack will not also bind. If MME/WASAPI is needed in
   parallel, plan a lower-filter or swap the INF to a custom class.
-- **URB geometry mismatch** (divergence 2): measured original uses 10-slot
-  10 ms URBs, pools 12 IN / 3 OUT, and a zero-length slot 0 for drift resync
-  (research 06). Streaming through the ASIO DLL will likely need this before
-  it is glitch-free.
+- **URB geometry** (divergence 2): pools now match (12 IN / 3 OUT × 10 slots).
+  Remaining gap: absolute StartFrame pacing vs ASAP, and per-slot request
+  lengths from the client queue (research 01 §5.3) instead of uniform fills.
 - **Rate repacking** (divergence 5): 44.1 k through the 48 k alt is measured
   behavior of the original (research 06 §3); izukidio is 48 k-only until the
   repack model lands.
