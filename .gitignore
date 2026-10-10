@@ -32,3 +32,4 @@ x64/
 
 # pi coding agent local config
 .pi-lens.json
+docs/izuki/*.pcap
