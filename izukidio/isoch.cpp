@@ -97,10 +97,11 @@ static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOI
     // MaxPacketSize for IN, BytesPerFrame for OUT (research 06 §3).
     {
         ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
+        ULONG totalBytes = ep->FramesPerUrb * frameStride;
         if (!ep->Inbound && dx->AsioSharedVa != nullptr) {
-            ULONG dwords = (ep->FramesPerUrb - 1) * ep->BytesPerFrame / 4;   // slot 0 = skip
-            RtlZeroMemory(ep->TransferBuffer[slot], (ep->FramesPerUrb - 1) * frameStride);
-            Izk_RingRead((PULONG)dx->AsioSharedVa, ep->TransferBuffer[slot] + frameStride, dwords);
+            ULONG dwords = totalBytes / 4;
+            RtlZeroMemory(ep->TransferBuffer[slot], totalBytes);
+            Izk_RingRead((PULONG)dx->AsioSharedVa, ep->TransferBuffer[slot], dwords);
         }
     }
 
@@ -116,15 +117,17 @@ static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOI
         ep->FramesPerUrb * (ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame);
     urb->UrbIsochronousTransfer.UrbLink = nullptr;
 
-    // Measured geometry (research 06 §3): slot 0 is a permanent zero-length
-    // skip slot (drift-correction position), slots 1..N-1 carry audio.
+    // Measured geometry (research 06 §3.1): all 10 slots submit data; the
+    // original's per-slot request = client-queue bytes (zero when starving),
+    // izukidio requests BytesPerFrame uniformly (192 B @48k, matching the
+    // original's measured submit side). The device may deliver more per slot
+    // (196 B); the buffer stride reserves MaxPacketSize for that.
     {
         ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
         ULONG reqLen = ep->BytesPerFrame;
         for (i = 0; i < ep->FramesPerUrb; ++i) {
             urb->UrbIsochronousTransfer.IsoPacket[i].Offset = i * frameStride;
-            urb->UrbIsochronousTransfer.IsoPacket[i].Length =
-                (i == 0 || ep->Inbound) ? 0 : reqLen;
+            urb->UrbIsochronousTransfer.IsoPacket[i].Length = reqLen;
             urb->UrbIsochronousTransfer.IsoPacket[i].Status = USBD_STATUS_SUCCESS;
         }
     }
@@ -170,16 +173,18 @@ static NTSTATUS IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID 
 
     // Advance the sample clock by the frames actually transferred.
     if (NT_SUCCESS(Irp->IoStatus.Status)) {
-        // Publish per iso packet (lengths may differ by the driver's ±4 B trim,
-        // research 06 §3); slot 0 is the zero-length skip slot.
+        // Publish per iso packet (research 06 §3.1): the device may deliver
+        // 49-frame (196 B) packets where 192 B were requested, and a
+        // zero-length slot anywhere (queue starvation / device-side). IN ring
+        // slots are 4-byte frames, publish len/4 dwords per packet.
         ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
-        ULONG bytesDone = 0;
+        ULONG framesDone = 0;
         for (i = 0; i < ep->FramesPerUrb; ++i) {
             ULONG len = urb->UrbIsochronousTransfer.IsoPacket[i].Length;
             if (ep->Inbound) {
                 // Completion Length on IN = bytes the device delivered
-                // (measured: full 196 B = 49 frames every packet, research 06);
-                // ring slots are 4-byte frames, publish len/4 dwords per packet.
+                // (measured: 196 B = 49 frames per data packet, one
+                // zero-length final slot at 44.1 kHz, research 06 §3.1).
                 if (dx->AsioSharedVa != nullptr && len >= 4) {
                     ULONG dwords = len / 4;
                     ULONG written = Izk_RingWrite(
@@ -187,10 +192,12 @@ static NTSTATUS IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID 
                         ep->TransferBuffer[slot] + i * frameStride, dwords);
                     Izk_AddOverflow(dx, dwords - written);
                 }
+                framesDone += len / 4;
+            } else {
+                framesDone += len / ep->BytesPerFrame;
             }
-            bytesDone += len;
         }
-        InterlockedAdd64(&ep->FramesTransferred64, (LONG64)(bytesDone / ep->BytesPerFrame));
+        InterlockedAdd64(&ep->FramesTransferred64, (LONG64)framesDone);
         dx->SampleClock.QuadPart = ep->FramesTransferred64;
         if (dx->AsioEvent != nullptr) {
             KeSetEvent(dx->AsioEvent, IO_NO_INCREMENT, FALSE);
