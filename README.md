@@ -38,7 +38,7 @@ not — see `docs/research/05-poc-design.md`.
 > **Visual Studio 2026 (v18) IDE cannot build this solution**: WDK 26100 ships
 > only `Microsoft.DriverKit.Build.Tasks.17.0.dll`, while MSBuild 18 requires the
 > `18.0` one, so the build fails with `ValidateNTTargetVersion ... could not be
-> loaded`. Native VS2026 driver builds need WDK 28000.2526. Use `rebuild.bat`
+> loaded`. Native VS2026 driver builds need WDK 28000.2526. Use `build.bat`
 > (below) instead — it always builds with the VS2022 Build Tools **amd64**
 > MSBuild (the 32-bit one lacks `x86\InfVerif.dll` and fails the INF step).
 
@@ -47,8 +47,8 @@ not — see `docs/research/05-poc-design.md`.
 From the repo root:
 
 ```bat
-rebuild.bat            :: Debug (default)
-rebuild.bat Release
+build.bat            :: Debug (default)
+build.bat Release
 ```
 
 Output (both projects, in `build\<CONFIG>\`):
