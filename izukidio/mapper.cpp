@@ -11,6 +11,26 @@
 // the image); bring-up tool only.
 #include "common.h"
 
+// Undocumented-but-stable kernel APIs (declared in ntifs.h; WDM drivers declare
+// them locally so the whole driver doesn't have to pull in ntifs.h).
+extern "C" {
+NTKERNELAPI NTSTATUS ObReferenceObjectByName(
+    _In_ PUNICODE_STRING ObjectName,
+    _In_ ULONG Attributes,
+    _In_opt_ PACCESS_STATE AccessState,
+    _In_opt_ ACCESS_MASK DesiredAccess,
+    _In_ POBJECT_TYPE ObjectType,
+    _In_ KPROCESSOR_MODE AccessMode,
+    _Inout_opt_ PVOID ParseContext,
+    _Outptr_ PVOID* Object);
+extern POBJECT_TYPE* IoDriverObjectType;
+NTKERNELAPI NTSTATUS IoEnumerateDeviceObjectList(
+    _In_ PDRIVER_OBJECT DriverObject,
+    _Out_writes_bytes_to_opt_(DeviceObjectListSize, (*ActualNumberDeviceObjects) * sizeof(PDEVICE_OBJECT)) PDEVICE_OBJECT* DeviceObjectList,
+    _In_ ULONG DeviceObjectListSize,
+    _Out_ PULONG ActualNumberDeviceObjects);
+}
+
 static PDRIVER_OBJECT IzkMapperDriverObject = nullptr;
 
 static UNICODE_STRING IzkMapperDriverName =
@@ -22,7 +42,7 @@ static BOOLEAN Izk_MatchTargetPdo(PDEVICE_OBJECT dev)
     ULONG len = 0;
 
     // Only PDOs carry device properties; hub FDOs filter out here.
-    if (!NT_SUCCESS(IoGetDeviceProperty(dev, DevicePropertyHardwareId,
+    if (!NT_SUCCESS(IoGetDeviceProperty(dev, DevicePropertyHardwareID,
                                         sizeof(hwId), hwId, &len))) {
         return FALSE;
     }

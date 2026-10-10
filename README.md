@@ -24,12 +24,40 @@ not — see `docs/research/05-poc-design.md`.
 
 ## Building
 
-On a **Windows 10/11 x64 machine** with Visual Studio 2022 and the WDK
-(Windows Driver Kit) installed:
+### Requirements
 
-1. Open `izukidio.sln` (repo root).
-2. Build `Release | x64` → `build\Release\izukidio.sys`.
-3. Create a test certificate / sign, or run under testsigning:
+- Windows 10/11 x64 (build machine)
+- **Visual Studio 2022 Build Tools** with:
+  - MSVC v143 x64/x86 toolset (`Microsoft.VisualStudio.Component.VC.Tools.x86.x64`)
+  - Spectre-mitigated v143 libraries (`Microsoft.VisualStudio.Component.VC.14.44.17.14.x86.x64.Spectre`)
+  - **Windows Driver Kit component** (`Component.Microsoft.Windows.DriverKit.BuildTools`)
+- **WDK 10.0.26100.6584** (+ its matching SDK) — e.g. `winget install Microsoft.WindowsWDK.10.0.26100`
+- .NET Framework 4.5 targeting (ships with VS)
+
+> [!NOTE]
+> **Visual Studio 2026 (v18) IDE cannot build this solution**: WDK 26100 ships
+> only `Microsoft.DriverKit.Build.Tasks.17.0.dll`, while MSBuild 18 requires the
+> `18.0` one, so the build fails with `ValidateNTTargetVersion ... could not be
+> loaded`. Native VS2026 driver builds need WDK 28000.2526. Use `rebuild.bat`
+> (below) instead — it always builds with the VS2022 Build Tools **amd64**
+> MSBuild (the 32-bit one lacks `x86\InfVerif.dll` and fails the INF step).
+
+### Build
+
+From the repo root:
+
+```bat
+rebuild.bat            :: Debug (default)
+rebuild.bat Release
+```
+
+Output: `build\Debug\izukidio.sys` / `build\Release\izukidio.sys` (+ INF, PDB).
+The .cat is intentionally not generated (`EnableInf2cat=false`); test signing is
+done out of band.
+
+### Install / test-signing
+
+1. Create a test certificate / sign, or run under testsigning:
 
 ```bat
 bcdedit /set testsigning on      :: reboot once
@@ -57,7 +85,9 @@ blocklist disabled for the Intel driver it uses.
 
 macOS/Linux: the driver sources can be syntax-checked with clang using the
 git-ignored shims in `.local/wdk-shims/` (see `AGENTS.md`); full builds need
-Windows + WDK.
+Windows + WDK. Do **not** mix MSYS2 (clang) with the MSVC build — keep the two
+toolchains separate. This repo's clangd config (`.clangd`) only points the
+editor indexer at the installed WDK headers; builds are pure MSVC/MSBuild.
 
 ## Development
 
