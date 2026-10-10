@@ -6,18 +6,27 @@
 
 static NTSTATUS IzkConfigureEndpoints(PIZUK_DEVICE_EXTENSION dx)
 {
-    PUSBD_INTERFACE_INFORMATION iface = dx->InterfaceInfo;
-    ULONG i;
+    // Playback (IF1, EP 0x02 OUT) and capture (IF2, EP 0x84 IN) live on
+    // different interfaces - scan both (descriptor: docs/izuki/usb-report.txt).
+    PUSBD_INTERFACE_INFORMATION ifaces[2] = { dx->InterfaceInfo, dx->CaptureInterfaceInfo };
+    ULONG i, j;
 
     dx->IsoInPipe = nullptr;
     dx->IsoOutPipe = nullptr;
 
-    for (i = 0; i < iface->NumberOfPipes; ++i) {
-        USBD_PIPE_INFORMATION* pipe = &iface->Pipes[i];
-        if (pipe->PipeType == UsbdPipeTypeIsochronous) {
+    for (j = 0; j < 2; ++j) {
+        if (ifaces[j] == nullptr) {
+            continue;
+        }
+        for (i = 0; i < ifaces[j]->NumberOfPipes; ++i) {
+            USBD_PIPE_INFORMATION* pipe = &ifaces[j]->Pipes[i];
+            if (pipe->PipeType != UsbdPipeTypeIsochronous) {
+                continue;
+            }
             if (pipe->EndpointAddress & 0x80) {
                 // IN endpoint: capture (ADC) or explicit feedback.
-                // PCM2902: audio IN has the larger packet size; feedback is 3 bytes.
+                // UMC22/PCM2902: audio IN = EP 0x84, 196 B; no feedback EP on
+                // this hardware (OUT is Adaptive, IN is Asynchronous).
                 if (pipe->MaximumPacketSize > 3 && dx->IsoInPipe == nullptr) {
                     dx->IsoInPipe = pipe->PipeHandle;
                     dx->MaxPacketIn = pipe->MaximumPacketSize;
@@ -134,15 +143,19 @@ EXTERN_C NTSTATUS Izk_UsbConfigure(PIZUK_DEVICE_EXTENSION dx)
         return status;
     }
 
-    // Select the configuration with the audio streaming interface at alternate 0
-    // (PCM2902: interface 0 = audio control, 1 = streaming, 2 = HID; only the
-    // streaming interface is needed here, research 01 §6). Note: USBD always
-    // activates the whole configuration - this picks which interface info is
-    // returned to us.
+    // Select BOTH streaming interfaces at alternate 1 (docs/izuki/
+    // usb-report.txt, measured on real UMC22):
+    //   IF1 alt1 = playback, EP 0x02 OUT iso Adaptive, stereo 16-bit,
+    //              32/44.1/48k, wMaxPacket 192 (SET_CUR picks the rate)
+    //   IF2 alt1 = capture, EP 0x84 IN iso Asynchronous, stereo 16-bit 48k
+    //              only, wMaxPacket 196 (192 + 4 B drift headroom)
+    // Alt 0 is zero-bandwidth (no endpoints). Rate selection for capture is
+    // via alternate setting, not SET_CUR; PoC targets 48k stereo only.
     RtlZeroMemory(interfaceList, sizeof(interfaceList));
-    wanted[0].Number = 1; wanted[0].Alternate = 0;
+    wanted[0].Number = 1; wanted[0].Alternate = 1;   // playback
+    wanted[1].Number = 2; wanted[1].Alternate = 1;   // capture
 
-    for (i = 0; i < 1; ++i) {
+    for (i = 0; i < 2; ++i) {
         interfaceList[i].InterfaceDescriptor = USBD_ParseConfigurationDescriptorEx(
             dx->ConfigDescriptor, dx->ConfigDescriptor,
             wanted[i].Number, wanted[i].Alternate, -1, -1, -1);
@@ -160,8 +173,15 @@ EXTERN_C NTSTATUS Izk_UsbConfigure(PIZUK_DEVICE_EXTENSION dx)
     status = Izk_UsbSendUrbSync(dx, urb);
     if (NT_SUCCESS(status)) {
         dx->InterfaceInfo = interfaceList[0].Interface;
+        dx->CaptureInterfaceInfo = interfaceList[1].Interface;
         dx->AudioInterfaceNumber = interfaceList[0].InterfaceDescriptor->bInterfaceNumber;
         dx->AudioAlternateSetting = interfaceList[0].InterfaceDescriptor->bAlternateSetting;
+        // Measured descriptor facts (UMC22, rev 0x0100): stereo 16-bit only.
+        // 4-byte frame = exactly one ring dword slot (isoch.cpp).
+        dx->SampleRate = 48000;
+        dx->BytesPerSample = 2;
+        dx->ChannelsIn = 2;
+        dx->ChannelsOut = 2;
         status = IzkConfigureEndpoints(dx);
     }
     USBD_UrbFree(dx->UsbdHandle, urb);
@@ -237,6 +257,7 @@ EXTERN_C void Izk_UsbUnconfigure(PIZUK_DEVICE_EXTENSION dx)
         dx->ConfigDescriptor = nullptr;
     }
     dx->InterfaceInfo = nullptr;
+    dx->CaptureInterfaceInfo = nullptr;
     dx->IsoInPipe = nullptr;
     dx->IsoOutPipe = nullptr;
     dx->FeedbackPipe = nullptr;

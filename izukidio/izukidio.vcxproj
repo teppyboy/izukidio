@@ -74,6 +74,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="driver.cpp" />
+    <ClCompile Include="mapper.cpp" />
     <ClCompile Include="device.cpp" />
     <ClCompile Include="usb.cpp" />
     <ClCompile Include="isoch.cpp" />

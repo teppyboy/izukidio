@@ -57,6 +57,7 @@ typedef struct _IZUK_DEVICE_EXTENSION {
     PUSB_DEVICE_DESCRIPTOR          DeviceDescriptor;
     PUSB_CONFIGURATION_DESCRIPTOR   ConfigDescriptor;
     PUSBD_INTERFACE_INFORMATION     InterfaceInfo;      // selected audio alt setting
+    PUSBD_INTERFACE_INFORMATION     CaptureInterfaceInfo; // capture (IF2 EP 0x84 IN) interface from SELECT_CONFIGURATION
     UCHAR           AudioInterfaceNumber;
     UCHAR           AudioAlternateSetting;
 
@@ -117,6 +118,13 @@ DRIVER_UNLOAD     IzkDriverUnload;
 
 // driver.cpp
 NTSTATUS Izk_AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT PhysicalDeviceObject);
+void     Izk_SetDispatch(PDRIVER_OBJECT DriverObject);
+NTSTATUS Izk_CreateFDO(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT PhysicalDeviceObject,
+                       BOOLEAN enableNow);
+
+// mapper.cpp (kdmapper mode)
+NTSTATUS Izk_MapperBootstrap(PVOID param1, PVOID param2);
+NTSTATUS Izk_MapperForwardPnp(PDEVICE_OBJECT DeviceObject, PIRP Irp);
 
 // device.cpp
 NTSTATUS Izk_DispatchCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp);

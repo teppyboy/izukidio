@@ -1,0 +1,3 @@
+[submodule "izukiloader/kdmapper"]
+	path = izukiloader/kdmapper
+	url = https://github.com/TheCruZ/kdmapper

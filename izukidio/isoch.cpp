@@ -114,7 +114,7 @@ static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOI
     urb->UrbIsochronousTransfer.UrbLink = nullptr;
 
     for (i = 0; i < ep->FramesPerUrb; ++i) {
-        urb->UrbIsochronousTransfer.IsoPacket[i].Offset = i * ep->BytesPerFrame;
+        urb->UrbIsochronousTransfer.IsoPacket[i].Offset = i * (ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame);
         urb->UrbIsochronousTransfer.IsoPacket[i].Length = (ep->Inbound ? 0 : ep->BytesPerFrame);
         urb->UrbIsochronousTransfer.IsoPacket[i].Status = USBD_STATUS_SUCCESS;
     }
@@ -185,18 +185,21 @@ static NTSTATUS IzkAllocateEndpointBuffers(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_
 {
     NTSTATUS status = STATUS_SUCCESS;
     ULONG urbSize = GET_ISO_URB_SIZE(ep->FramesPerUrb);
+    // Capture buffers use MaxPacketSize: PCM2902 IN can deliver 196 B/frame
+    // (wMaxPacketSize) vs the 192 B nominal payload, due to clock drift.
+    ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
     ULONG i;
 
     ep->FramesPerUrb = IzkFramesPerUrb;
     for (i = 0; i < IZUK_MAX_ISO_URBS; ++i) {
         ep->Urb[i] = (PURB)ExAllocatePool2(POOL_FLAG_NON_PAGED, urbSize, IZUK_TAG);
-        ep->TransferBuffer[i] = (PUCHAR)ExAllocatePool2(POOL_FLAG_NON_PAGED, ep->FramesPerUrb * ep->BytesPerFrame, IZUK_TAG);
+        ep->TransferBuffer[i] = (PUCHAR)ExAllocatePool2(POOL_FLAG_NON_PAGED, ep->FramesPerUrb * frameStride, IZUK_TAG);
         ep->UrbIrp[i] = IoAllocateIrp((CCHAR)(dx->LowerDevice->StackSize + 1), FALSE);
         if (ep->Urb[i] == nullptr || ep->TransferBuffer[i] == nullptr || ep->UrbIrp[i] == nullptr) {
             status = STATUS_INSUFFICIENT_RESOURCES;
             break;
         }
-        ep->Mdl[i] = IoAllocateMdl(ep->TransferBuffer[i], ep->FramesPerUrb * ep->BytesPerFrame, FALSE, FALSE, nullptr);
+        ep->Mdl[i] = IoAllocateMdl(ep->TransferBuffer[i], ep->FramesPerUrb * frameStride, FALSE, FALSE, nullptr);
         if (ep->Mdl[i] == nullptr) {
             status = STATUS_INSUFFICIENT_RESOURCES;
             break;

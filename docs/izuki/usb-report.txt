@@ -1,0 +1,1692 @@
+
+    =========================== USB Port1 ===========================
+
+Connection Status        : 0x01 (Device is connected)
+Port Chain               : 3-1
+Properties               : 0x01
+ IsUserConnectable       : yes
+ PortIsDebugCapable      : no
+ PortHasMultiCompanions  : no
+ PortConnectorIsTypeC    : no
+ConnectionIndex          : 0x01 (Port 1)
+CompanionIndex           : 0
+ CompanionHubSymLnk      : USB#ROOT_HUB30#5&5aaa5b3&0&0#{f18a0e88-c30c-11d0-8815-00a0c906bed8}
+ CompanionPortNumber     : 0x06 (Port 6)
+ -> CompanionPortChain   : 3-6
+
+      ========================== Summary =========================
+Vendor ID                : 0x08BB (Texas Instruments Japan)
+Product ID               : 0x2902
+Manufacturer String      : "Burr-Brown from TI              "
+Product String           : "USB Audio CODEC "
+Serial                   : ---
+USB Version              : 1.1 (12 Mbit/s FullSpeed)
+Port maximum Speed       : High-Speed (Companion Port 3-6 is doing the SuperSpeed)
+Device maximum Speed     : Full-Speed
+Device Connection Speed  : Full-Speed
+Self powered             : no
+Demanded Current         : 100 mA
+Used Endpoints           : 3
+
+      ======================== USB Device ========================
+
+        +++++++++++++++++ Device Information ++++++++++++++++++
+Device Description       : USB Composite Device
+BusReported Device Desc  : USB Audio CODEC 
+Device Path              : \\?\USB#VID_08BB&PID_2902#6&3b164ebc&0&1#{a5dcbf10-6530-11d2-901f-00c04fb951ed} (GUID_DEVINTERFACE_USB_DEVICE)
+Kernel Name              : \Device\USBPDO-3
+Device ID                : USB\VID_08BB&PID_2902\6&3B164EBC&0&1
+Hardware IDs             : USB\VID_08BB&PID_2902&REV_0100 USB\VID_08BB&PID_2902
+Driver KeyName           : {36fc9e60-c465-11cf-8056-444553540000}\0009 (GUID_DEVCLASS_USB)
+Driver                   : \SystemRoot\System32\drivers\usbccgp.sys (Version: 10.0.28000.2952  Date: 2026-09-13  Company: Microsoft Corporation)
+Driver Inf               : C:\Windows\inf\usb.inf
+Legacy BusType           : PNPBus
+Class                    : USB
+Class GUID               : {36fc9e60-c465-11cf-8056-444553540000} (GUID_DEVCLASS_USB)
+Service                  : usbccgp
+Enumerator               : USB
+Location Info            : Port_#0001.Hub_#0001
+Address                  : 1
+Location IDs             : PCIROOT(0)#PCI(0801)#PCI(0003)#USBROOT(0)#USB(1), ACPI(_SB_)#ACPI(PCI0)#ACPI(GP17)#ACPI(XHC0)#ACPI(RHUB)#ACPI(PRT1)
+Container ID             : {fa910532-c35c-11f1-b346-e03aaadefbbf}
+Manufacturer Info        : (Standard USB Host Controller)
+Capabilities             : 0x84 (Removable, SurpriseRemovalOK)
+Status                   : 0x0180600A (DN_DRIVER_LOADED, DN_STARTED, DN_DISABLEABLE, DN_REMOVABLE, DN_NT_ENUMERATOR, DN_NT_DRIVER)
+First Install Date       : 2026-10-09 19:52:48
+Last Arrival Date        : 2026-10-09 22:22:17
+EnhancedPowerMgmtEnabled : 0
+Power State              : D0 (supported: D0, D3, wake from D0)
+
+        ---------------- Connection Information ---------------
+Connection Index         : 0x01 (Port 1)
+Connection Status        : 0x01 (DeviceConnected)
+Current Config Value     : 0x01 (Configuration 1)
+Device Address           : 0x01 (1)
+Is Hub                   : 0x00 (no)
+Device Bus Speed         : 0x01 (Full-Speed)
+Number of open Pipes     : 0x02 (2 pipes to data endpoints)
+Pipe[0]                  : EndpointID=5  Direction=IN   ScheduleOffset=0  Type=Interrupt    wMaxPacketSize=0x1     bInterval=10  -> 130 Bits/ms = 16250 Bytes/s
+Pipe[1]                  : EndpointID=2  Direction=OUT  ScheduleOffset=0  Type=Isochronous  wMaxPacketSize=0xC0    bInterval=1   -> 1876 Bits/ms = 234500 Bytes/s
+
+        --------------- Connection Information V2 -------------
+Connection Index         : 0x01 (1)
+Length                   : 0x10 (16 bytes)
+SupportedUsbProtocols    : 0x03
+ Usb110                  : 1 (yes, port supports USB 1.1)
+ Usb200                  : 1 (yes, port supports USB 2.0)
+ Usb300                  : 0 (no, port not supports USB 3.0) -> but Companion Port 3-6 does
+ ReservedMBZ             : 0x00
+Flags                    : 0x00
+ DevIsOpAtSsOrHigher     : 0 (Device is not operating at SuperSpeed or higher)
+ DevIsSsCapOrHigher      : 0 (Device is not SuperSpeed capable or higher)
+ DevIsOpAtSsPlusOrHigher : 0 (Device is not operating at SuperSpeedPlus or higher)
+ DevIsSsPlusCapOrHigher  : 0 (Device is not SuperSpeedPlus capable or higher)
+ ReservedMBZ             : 0x00
+
+    ---------------------- Device Descriptor ----------------------
+bLength                  : 0x12 (18 bytes)
+bDescriptorType          : 0x01 (Device Descriptor)
+bcdUSB                   : 0x110 (USB Version 1.1)
+bDeviceClass             : 0x00 (defined by the interface descriptors)
+bDeviceSubClass          : 0x00
+bDeviceProtocol          : 0x00
+bMaxPacketSize0          : 0x08 (8 bytes)
+idVendor                 : 0x08BB (Texas Instruments Japan)
+idProduct                : 0x2902
+bcdDevice                : 0x0100
+iManufacturer            : 0x01 (String Descriptor 1)
+ Language 0x0409         : "Burr-Brown from TI              "
+iProduct                 : 0x02 (String Descriptor 2)
+ Language 0x0409         : "USB Audio CODEC "
+iSerialNumber            : 0x00 (No String Descriptor)
+bNumConfigurations       : 0x01 (1 Configuration)
+
+    ------------------ Configuration Descriptor -------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x02 (Configuration Descriptor)
+wTotalLength             : 0x04A7 (1191 bytes)
+bNumInterfaces           : 0x04 (4 Interfaces)
+bConfigurationValue      : 0x01 (Configuration 1)
+iConfiguration           : 0x00 (No String Descriptor)
+bmAttributes             : 0x80
+ D7: Reserved, set 1     : 0x01
+ D6: Self Powered        : 0x00 (no)
+ D5: Remote Wakeup       : 0x00 (no)
+ D4..0: Reserved, set 0  : 0x00
+MaxPower                 : 0x32 (100 mA)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x00 (Interface 0)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x00 (Default Control Pipe only)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x01 (Audio Control)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        ------ Audio Control Interface Header Descriptor ------
+bLength                  : 0x0A (10 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (Header)
+bcdADC                   : 0x0100
+wTotalLength             : 0x003E (62 bytes)
+bInCollection            : 0x02
+baInterfaceNr[1]         : 0x01
+baInterfaceNr[2]         : 0x02
+
+        ------- Audio Control Input Terminal Descriptor -------
+bLength                  : 0x0C (12 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Input Terminal)
+bTerminalID              : 0x01
+wTerminalType            : 0x0101 (USB Streaming)
+bAssocTerminal           : 0x00
+bNrChannels              : 0x02 (2 channels)
+wChannelConfig           : 0x0003 (L, R)
+iChannelNames            : 0x00 (No String Descriptor)
+iTerminal                : 0x00 (No String Descriptor)
+
+        ------- Audio Control Output Terminal Descriptor ------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x03 (Output Terminal)
+bTerminalID              : 0x02
+wTerminalType            : 0x0301 (Speaker)
+bAssocTerminal           : 0x00 (0)
+bSourceID                : 0x03 (3)
+iTerminal                : 0x00 (No String Descriptor)
+
+        -------- Audio Control Feature Unit Descriptor --------
+bLength                  : 0x0A (10 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x06 (Feature Unit)
+bUnitID                  : 0x03 (3)
+bSourceID                : 0x01 (1)
+bControlSize             : 0x01 (1 byte per control)
+bmaControls[0]           : 0x01
+ D0: Mute                : 1
+ D1: Volume              : 0
+ D2: Bass                : 0
+ D3: Mid                 : 0
+ D4: Treble              : 0
+ D5: Graphic Equalizer   : 0
+ D6: Automatic Gain      : 0
+ D7: Delay               : 0
+bmaControls[1]           : 0x02
+ D0: Mute                : 0
+ D1: Volume              : 1
+ D2: Bass                : 0
+ D3: Mid                 : 0
+ D4: Treble              : 0
+ D5: Graphic Equalizer   : 0
+ D6: Automatic Gain      : 0
+ D7: Delay               : 0
+bmaControls[2]           : 0x02
+ D0: Mute                : 0
+ D1: Volume              : 1
+ D2: Bass                : 0
+ D3: Mid                 : 0
+ D4: Treble              : 0
+ D5: Graphic Equalizer   : 0
+ D6: Automatic Gain      : 0
+ D7: Delay               : 0
+iFeature                 : 0x00 (No String Descriptor)
+
+        ------- Audio Control Input Terminal Descriptor -------
+bLength                  : 0x0C (12 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Input Terminal)
+bTerminalID              : 0x04
+wTerminalType            : 0x0201 (Microphone)
+bAssocTerminal           : 0x00
+bNrChannels              : 0x02 (2 channels)
+wChannelConfig           : 0x0003 (L, R)
+iChannelNames            : 0x00 (No String Descriptor)
+iTerminal                : 0x00 (No String Descriptor)
+
+        ------- Audio Control Output Terminal Descriptor ------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x03 (Output Terminal)
+bTerminalID              : 0x05
+wTerminalType            : 0x0101 (USB Streaming)
+bAssocTerminal           : 0x00 (0)
+bSourceID                : 0x04 (4)
+iTerminal                : 0x00 (No String Descriptor)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x01 (Interface 1)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x00 (Default Control Pipe only)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x01 (Interface 1)
+bAlternateSetting        : 0x01
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x01 (Terminal ID 1)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x11 (17 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x03 (supports 3 sample frequencies)
+tSamFreq[1]              : 0x07D00 (32000 Hz)
+tSamFreq[2]              : 0x0AC44 (44100 Hz)
+tSamFreq[3]              : 0x0BB80 (48000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x02 (Direction=OUT EndpointID=2)
+bmAttributes             : 0x09 (TransferType=Isochronous  SyncType=Adaptive  EndpointType=Data)
+wMaxPacketSize           : 0x00C0 (192 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0200 (512 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x01 (Interface 1)
+bAlternateSetting        : 0x02
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x01 (Terminal ID 1)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x11 (17 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x03 (supports 3 sample frequencies)
+tSamFreq[1]              : 0x07D00 (32000 Hz)
+tSamFreq[2]              : 0x0AC44 (44100 Hz)
+tSamFreq[3]              : 0x0BB80 (48000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x02 (Direction=OUT EndpointID=2)
+bmAttributes             : 0x09 (TransferType=Isochronous  SyncType=Adaptive  EndpointType=Data)
+wMaxPacketSize           : 0x0060 (96 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0200 (512 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x01 (Interface 1)
+bAlternateSetting        : 0x03
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x01 (Terminal ID 1)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x11 (17 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x01 (1 bytes per subframe)
+bBitResolution           : 0x08 (8 bits per sample)
+bSamFreqType             : 0x03 (supports 3 sample frequencies)
+tSamFreq[1]              : 0x07D00 (32000 Hz)
+tSamFreq[2]              : 0x0AC44 (44100 Hz)
+tSamFreq[3]              : 0x0BB80 (48000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x02 (Direction=OUT EndpointID=2)
+bmAttributes             : 0x09 (TransferType=Isochronous  SyncType=Adaptive  EndpointType=Data)
+wMaxPacketSize           : 0x0060 (96 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0200 (512 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x01 (Interface 1)
+bAlternateSetting        : 0x04
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x01 (Terminal ID 1)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x11 (17 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x01 (1 bytes per subframe)
+bBitResolution           : 0x08 (8 bits per sample)
+bSamFreqType             : 0x03 (supports 3 sample frequencies)
+tSamFreq[1]              : 0x07D00 (32000 Hz)
+tSamFreq[2]              : 0x0AC44 (44100 Hz)
+tSamFreq[3]              : 0x0BB80 (48000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x02 (Direction=OUT EndpointID=2)
+bmAttributes             : 0x09 (TransferType=Isochronous  SyncType=Adaptive  EndpointType=Data)
+wMaxPacketSize           : 0x0030 (48 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0200 (512 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x01 (Interface 1)
+bAlternateSetting        : 0x05
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x01 (Terminal ID 1)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0002 (PCM8)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x11 (17 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x01 (1 bytes per subframe)
+bBitResolution           : 0x08 (8 bits per sample)
+bSamFreqType             : 0x03 (supports 3 sample frequencies)
+tSamFreq[1]              : 0x07D00 (32000 Hz)
+tSamFreq[2]              : 0x0AC44 (44100 Hz)
+tSamFreq[3]              : 0x0BB80 (48000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x02 (Direction=OUT EndpointID=2)
+bmAttributes             : 0x09 (TransferType=Isochronous  SyncType=Adaptive  EndpointType=Data)
+wMaxPacketSize           : 0x0060 (96 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0200 (512 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x01 (Interface 1)
+bAlternateSetting        : 0x06
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x01 (Terminal ID 1)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0002 (PCM8)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x11 (17 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x01 (1 bytes per subframe)
+bBitResolution           : 0x08 (8 bits per sample)
+bSamFreqType             : 0x03 (supports 3 sample frequencies)
+tSamFreq[1]              : 0x07D00 (32000 Hz)
+tSamFreq[2]              : 0x0AC44 (44100 Hz)
+tSamFreq[3]              : 0x0BB80 (48000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x02 (Direction=OUT EndpointID=2)
+bmAttributes             : 0x09 (TransferType=Isochronous  SyncType=Adaptive  EndpointType=Data)
+wMaxPacketSize           : 0x0030 (48 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0200 (512 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x00 (Default Control Pipe only)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x01
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x0BB80 (48000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x00C4 (196 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x02
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x0BB80 (48000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0062 (98 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x03
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x0AC44 (44100 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x00B4 (180 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x04
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x0AC44 (44100 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x005A (90 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x05
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x07D00 (32000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0084 (132 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x06
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x07D00 (32000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0042 (66 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x07
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x05622 (22050 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x005C (92 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x08
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x05622 (22050 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x002E (46 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x09
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x03E80 (16000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0044 (68 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x0A
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x03E80 (16000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0022 (34 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x0B
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x01 (1 bytes per subframe)
+bBitResolution           : 0x08 (8 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x03E80 (16000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0022 (34 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x0C
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x01 (1 bytes per subframe)
+bBitResolution           : 0x08 (8 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x03E80 (16000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0011 (17 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x0D
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x01 (1 bytes per subframe)
+bBitResolution           : 0x08 (8 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x01F40 (8000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0012 (18 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x0E
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x01 (1 bytes per subframe)
+bBitResolution           : 0x08 (8 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x01F40 (8000 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x05 (TransferType=Isochronous  SyncType=Asynchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0009 (9 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x0F
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x02B11 (11025 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x0D (TransferType=Isochronous  SyncType=Synchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0030 (48 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x10
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x02 (2 bytes per subframe)
+bBitResolution           : 0x10 (16 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x02B11 (11025 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x0D (TransferType=Isochronous  SyncType=Synchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0018 (24 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x11
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x02 (2 channels)
+bSubframeSize            : 0x01 (1 bytes per subframe)
+bBitResolution           : 0x08 (8 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x02B11 (11025 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x0D (TransferType=Isochronous  SyncType=Synchronous  EndpointType=Data)
+wMaxPacketSize           : 0x0018 (24 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x12
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x01 (Audio)
+bInterfaceSubClass       : 0x02 (Audio Streaming)
+bInterfaceProtocol       : 0x00
+iInterface               : 0x00 (No String Descriptor)
+
+        -------- Audio Streaming Interface Descriptor ---------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x01 (AS_GENERAL)
+bTerminalLink            : 0x05 (Terminal ID 5)
+bDelay                   : 0x00 (0 frames)
+wFormatTag               : 0x0001 (PCM)
+
+        ------- Audio Streaming Format Type Descriptor --------
+bLength                  : 0x0B (11 bytes)
+bDescriptorType          : 0x24 (Audio Interface Descriptor)
+bDescriptorSubtype       : 0x02 (Format Type)
+bFormatType              : 0x01 (FORMAT_TYPE_I)
+bNrChannels              : 0x01 (1 channel)
+bSubframeSize            : 0x01 (1 bytes per subframe)
+bBitResolution           : 0x08 (8 bits per sample)
+bSamFreqType             : 0x01 (supports 1 sample frequence)
+tSamFreq[1]              : 0x02B11 (11025 Hz)
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x0D (TransferType=Isochronous  SyncType=Synchronous  EndpointType=Data)
+wMaxPacketSize           : 0x000C (12 bytes)
+bInterval                : 0x01 (1 ms)
+bRefresh                 : 0x00
+bSynchAddress            : 0x00
+
+        ----------- Audio Data Endpoint Descriptor ------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x25 (Audio Endpoint Descriptor)
+bDescriptorSubtype       : 0x01 (General)
+bmAttributes             : 0x00
+ D0   : Sampling Freq    : 0x00 (not supported)
+ D1   : Pitch            : 0x00 (not supported)
+ D6..2: Reserved         : 0x00
+ D7   : MaxPacketsOnly   : 0x00 (no)
+bLockDelayUnits          : 0x02 (Decoded PCM samples)
+wLockDelay               : 0x0000 (0 samples)
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x03 (Interface 3)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x00 (None)
+bInterfaceProtocol       : 0x00 (None)
+iInterface               : 0x00 (No String Descriptor)
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0100 (HID Version 1.00)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x001F (31 bytes)
+  09 02             Usage (unknown)
+  A7 04 04 01 00    Push
+  80                Input ()
+  32 09 04          unk
+  00                unk
+  00                unk
+  00                unk
+  01 01             unk
+  00                unk
+  00                unk
+  0A 24 01          Usage (unknown)
+  00                unk
+  01 3E             unk
+  00                unk
+  02 01 02          unk
+  0C                unk
+  24                Logical Maximum (0)
+  02                unk
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x85 (Direction=IN EndpointID=5)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0001 (1 byte)
+bInterval                : 0x0A (10 ms)
+
+      -------------------- String Descriptors -------------------
+             ------ String Descriptor 0 ------
+bLength                  : 0x04 (4 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language ID[0]           : 0x0409 (English - United States)
+             ------ String Descriptor 1 ------
+bLength                  : 0x42 (66 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "Burr-Brown from TI              "  *!*CAUTION  trailing space characters
+             ------ String Descriptor 2 ------
+bLength                  : 0x22 (34 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "USB Audio CODEC "  *!*CAUTION  trailing space character
+
+        +++++++++++++++++ Device Information ++++++++++++++++++
+Friendly Name            : USB Audio CODEC
+Device Description       : USB Audio Device
+BusReported Device Desc  : USB Audio CODEC 
+Device Path 1            : \\?\USB#VID_08BB&PID_2902&MI_00#7&642df1f&2&0000#{65e8773e-8f56-11d0-a3b9-00a0c9223196}\global (AM_KSCATEGORY_RENDER)
+Device Path 2            : \\?\USB#VID_08BB&PID_2902&MI_00#7&642df1f&2&0000#{6994ad04-93ef-11d0-a3cc-00a0c9223196}\global (AM_KSCATEGORY_AUDIO)
+Device Path 3            : \\?\USB#VID_08BB&PID_2902&MI_00#7&642df1f&2&0000#{65e8773d-8f56-11d0-a3b9-00a0c9223196}\global (AM_KSCATEGORY_CAPTURE)
+Kernel Name              : \Device\00000089
+Device ID                : USB\VID_08BB&PID_2902&MI_00\7&642DF1F&2&0000
+Hardware IDs             : USB\VID_08BB&PID_2902&REV_0100&MI_00 USB\VID_08BB&PID_2902&MI_00
+Driver KeyName           : {4d36e96c-e325-11ce-bfc1-08002be10318}\0003 (GUID_DEVCLASS_MEDIA)
+Driver                   : \SystemRoot\system32\drivers\usbaudio.sys (Version: 10.0.28000.2956  Date: 2026-09-19  Company: Microsoft Corporation)
+Driver Inf               : C:\Windows\inf\wdma_usb.inf
+Legacy BusType           : PNPBus
+Class                    : MEDIA
+Class GUID               : {4d36e96c-e325-11ce-bfc1-08002be10318} (GUID_DEVCLASS_MEDIA)
+Service                  : usbaudio
+Enumerator               : USB
+Location Info            : 0063.0000.0003.001.000.000.000.000.000
+Address                  : 1
+Manufacturer Info        : (Generic USB Audio)
+Capabilities             : 0xA0 (SilentInstall, SurpriseRemovalOK)
+Status                   : 0x0180200A (DN_DRIVER_LOADED, DN_STARTED, DN_DISABLEABLE, DN_NT_ENUMERATOR, DN_NT_DRIVER)
+First Install Date       : 2026-10-09 19:52:48
+Last Arrival Date        : 2026-10-09 22:22:18
+EnhancedPowerMgmtEnabled : 0
+Power State              : D0 (supported: D0, D3, wake from D0)
+
+        +++++++++++++++++ Device Information ++++++++++++++++++
+Friendly Name            : Speakers (USB Audio CODEC )
+Device Description       : Audio Endpoint
+BusReported Device Desc  : Speakers (USB Audio CODEC )
+Device Path              : \\?\SWD#MMDEVAPI#{0.0.0.00000000}.{303d3729-8bf9-42f7-bc6a-7ce34d6dca0a}#{e6327cad-dcec-4949-ae8a-991e976a79d2} (DEVINTERFACE_AUDIO_RENDER)
+Kernel Name              : \Device\000000b4
+Device ID                : SWD\MMDEVAPI\{0.0.0.00000000}.{303D3729-8BF9-42F7-BC6A-7CE34D6DCA0A}
+Hardware IDs             : MMDEVAPI\AudioEndpoints
+Driver KeyName           : {c166523c-fe0c-4a94-a586-f1a80cfbbf3e}\0003 (AUDIOENDPOINT_CLASS_UUID)
+Driver Inf               : C:\Windows\inf\audioendpoint.inf
+Legacy BusType           : PNPBus
+Class                    : AudioEndpoint
+Class GUID               : {c166523c-fe0c-4a94-a586-f1a80cfbbf3e} (AUDIOENDPOINT_CLASS_UUID)
+Service                  : -
+Enumerator               : SWD
+Location Info            : -
+Address                  : -
+Manufacturer Info        : Microsoft
+Capabilities             : 0xD0 (UniqueID, RawDeviceOK, SurpriseRemovalOK)
+Status                   : 0x0180200A (DN_DRIVER_LOADED, DN_STARTED, DN_DISABLEABLE, DN_NT_ENUMERATOR, DN_NT_DRIVER)
+First Install Date       : 2026-10-09 19:52:48
+Last Arrival Date        : 2026-10-09 22:22:24
+EnhancedPowerMgmtEnabled : 0
+Power State              : D0 (supported: D0, D3)
+
+        +++++++++++++++++ Device Information ++++++++++++++++++
+Friendly Name            : Microphone (USB Audio CODEC )
+Device Description       : Audio Endpoint
+BusReported Device Desc  : Microphone (USB Audio CODEC )
+Device Path              : \\?\SWD#MMDEVAPI#{0.0.1.00000000}.{7947b99e-83e5-437b-8eb8-436041fb725a}#{2eef81be-33fa-4800-9670-1cd474972c3f} (DEVINTERFACE_AUDIO_CAPTURE)
+Kernel Name              : \Device\000000b5
+Device ID                : SWD\MMDEVAPI\{0.0.1.00000000}.{7947B99E-83E5-437B-8EB8-436041FB725A}
+Hardware IDs             : MMDEVAPI\AudioEndpoints
+Driver KeyName           : {c166523c-fe0c-4a94-a586-f1a80cfbbf3e}\0002 (AUDIOENDPOINT_CLASS_UUID)
+Driver Inf               : C:\Windows\inf\audioendpoint.inf
+Legacy BusType           : PNPBus
+Class                    : AudioEndpoint
+Class GUID               : {c166523c-fe0c-4a94-a586-f1a80cfbbf3e} (AUDIOENDPOINT_CLASS_UUID)
+Service                  : -
+Enumerator               : SWD
+Location Info            : -
+Address                  : -
+Manufacturer Info        : Microsoft
+Capabilities             : 0xD0 (UniqueID, RawDeviceOK, SurpriseRemovalOK)
+Status                   : 0x0180200A (DN_DRIVER_LOADED, DN_STARTED, DN_DISABLEABLE, DN_NT_ENUMERATOR, DN_NT_DRIVER)
+First Install Date       : 2026-10-09 19:52:48
+Last Arrival Date        : 2026-10-09 22:22:24
+EnhancedPowerMgmtEnabled : 0
+Power State              : D0 (supported: D0, D3)
+
+        +++++++++++++++++ Device Information ++++++++++++++++++
+Device Description       : USB Input Device
+BusReported Device Desc  : USB Audio CODEC 
+Kernel Name (PDO)        : \Device\0000008a
+Device ID                : USB\VID_08BB&PID_2902&MI_03\7&642DF1F&2&0003
+Hardware IDs             : USB\VID_08BB&PID_2902&REV_0100&MI_03 USB\VID_08BB&PID_2902&MI_03
+Driver KeyName           : {745a17a0-74d3-11d0-b6fe-00a0c90f57da}\0007 (GUID_DEVCLASS_HIDCLASS)
+Driver                   : \SystemRoot\System32\drivers\hidusb.sys (Version: 10.0.28000.2952  Date: 2026-09-13  Company: Microsoft Corporation)
+Driver Inf               : C:\Windows\inf\input.inf
+Legacy BusType           : PNPBus
+Class                    : HIDClass
+Class GUID               : {745a17a0-74d3-11d0-b6fe-00a0c90f57da} (GUID_DEVCLASS_HIDCLASS)
+Service                  : HidUsb
+Enumerator               : USB
+Location Info            : 0063.0000.0003.001.000.000.000.000.000
+Address                  : 4
+Manufacturer Info        : (Standard system devices)
+Capabilities             : 0x80 (SurpriseRemovalOK)
+Status                   : 0x0180200A (DN_DRIVER_LOADED, DN_STARTED, DN_DISABLEABLE, DN_NT_ENUMERATOR, DN_NT_DRIVER)
+First Install Date       : 2026-10-09 19:52:48
+Last Arrival Date        : 2026-10-09 22:22:18
+SelectiveSuspendEnabled  : 0
+EnhancedPowerMgmtEnabled : 1
+Power State              : D0 (supported: D0, D3, wake from D0)
+
+        +++++++++++++++++ Device Information ++++++++++++++++++
+Device Description       : HID-compliant consumer control device
+Device Path              : \\?\HID#VID_08BB&PID_2902&MI_03#8&36a54aa1&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (GUID_DEVINTERFACE_HID)
+Kernel Name              : \Device\0000008f
+Device ID                : HID\VID_08BB&PID_2902&MI_03\8&36A54AA1&0&0000
+Hardware IDs             : HID\VID_08BB&PID_2902&REV_0100&MI_03 HID\VID_08BB&PID_2902&MI_03 HID\VID_08BB&UP:000C_U:0001 HID_DEVICE_SYSTEM_CONSUMER HID_DEVICE_UP:000C_U:0001 HID_DEVICE
+Driver KeyName           : {745a17a0-74d3-11d0-b6fe-00a0c90f57da}\0017 (GUID_DEVCLASS_HIDCLASS)
+Driver Inf               : C:\Windows\inf\hidserv.inf
+Legacy BusType           : PNPBus
+Class                    : HIDClass
+Class GUID               : {745a17a0-74d3-11d0-b6fe-00a0c90f57da} (GUID_DEVCLASS_HIDCLASS)
+Service                  : -
+Enumerator               : HID
+Location Info            : -
+Address                  : 1
+Manufacturer Info        : Microsoft
+Capabilities             : 0xE0 (SilentInstall, RawDeviceOK, SurpriseRemovalOK)
+Status                   : 0x0180200A (DN_DRIVER_LOADED, DN_STARTED, DN_DISABLEABLE, DN_NT_ENUMERATOR, DN_NT_DRIVER)
+First Install Date       : 2026-10-09 19:52:48
+Last Arrival Date        : 2026-10-09 22:22:18
+EnhancedPowerMgmtEnabled : 0
+Power State              : D0 (supported: D0, D3, wake from D0)
+
+             ++++++++++++++ HID Information +++++++++++++++
+Manufacturer             : Burr-Brown from TI
+Product                  : USB Audio CODEC
+UsagePage                : 0x0C (Consumer)
+Usage                    : 0x01 (Consumer Control)

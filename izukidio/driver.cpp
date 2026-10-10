@@ -6,13 +6,9 @@
 
 #pragma code_seg("INIT")
 
-EXTERN_C NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
+// Fill the dispatch table (shared by INF mode and kdmapper mode).
+void Izk_SetDispatch(PDRIVER_OBJECT DriverObject)
 {
-    UNREFERENCED_PARAMETER(RegistryPath);
-
-    DbgPrint("IZUKIDIO: DriverEntry (Behringer USB Audio 2.8.40 reimplementation)\n");
-
-    DriverObject->DriverUnload = IzkDriverUnload;
     DriverObject->MajorFunction[IRP_MJ_CREATE]                  = Izk_DispatchCreateClose;
     DriverObject->MajorFunction[IRP_MJ_CLOSE]                   = Izk_DispatchCreateClose;
     DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL]          = Izk_DispatchDeviceControl;
@@ -20,22 +16,41 @@ EXTERN_C NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Regis
     DriverObject->MajorFunction[IRP_MJ_SYSTEM_CONTROL]          = Izk_DispatchSystemControl;
     DriverObject->MajorFunction[IRP_MJ_PNP]                     = Izk_DispatchPnp;
     DriverObject->MajorFunction[IRP_MJ_POWER]                   = Izk_DispatchPower;
+}
+
+EXTERN_C NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
+{
+    UNREFERENCED_PARAMETER(RegistryPath);
+
+    // kdmapper invokes the PE entry with user-supplied integers, not a real
+    // DRIVER_OBJECT. A real PnP load always passes a valid one — detect and
+    // branch (mapper-mode bootstrap lives in mapper.cpp).
+    if (DriverObject == nullptr || DriverObject->Type != IO_TYPE_DRIVER ||
+        DriverObject->Size != sizeof(DRIVER_OBJECT)) {
+        return Izk_MapperBootstrap((PVOID)DriverObject, (PVOID)RegistryPath);
+    }
+
+    DbgPrint("IZUKIDIO: DriverEntry (Behringer USB Audio 2.8.40 reimplementation)\n");
+
+    DriverObject->DriverUnload = IzkDriverUnload;
+    Izk_SetDispatch(DriverObject);
 
     return STATUS_SUCCESS;
 }
 
 #pragma code_seg()
 
-// AddDevice: mirror of the original PGKernelDevice::DISPAddDevice
-// (research 01 §2): named-less FDO, DeviceType 0x8002, DO_DIRECT_IO,
-// attach to USB PDO stack, register + enable device interface GUID.
-EXTERN_C NTSTATUS Izk_AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT PhysicalDeviceObject)
+// FDO creation shared by INF AddDevice and the mapper bootstrap.
+// enableNow: mapper mode has no PnP start IRP — register + enable the
+// interface GUID and configure USB immediately.
+EXTERN_C NTSTATUS Izk_CreateFDO(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT PhysicalDeviceObject,
+                                BOOLEAN enableNow)
 {
     NTSTATUS status;
     PDEVICE_OBJECT deviceObject = nullptr;
     PIZUK_DEVICE_EXTENSION dx;
 
-    DbgPrint("IZUKIDIO: AddDevice\n");
+    DbgPrint("IZUKIDIO: creating FDO\n");
 
     status = IoCreateDevice(DriverObject,
                             sizeof(IZUK_DEVICE_EXTENSION),
@@ -72,7 +87,8 @@ EXTERN_C NTSTATUS Izk_AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT Phys
     RtlInitUnicodeString(&dx->DosSymLink, IZUK_DOS_DEVNAME);
 
     // Register the same device interface GUID the original ASIO DLL enumerates
-    // (research 03 §2). Enabled at PnP start device.
+    // (research 03 §2). INF mode: enabled at PnP start device; mapper mode:
+    // enabled right here (no PnP dispatcher involved).
     status = IoRegisterDeviceInterface(PhysicalDeviceObject,
                                        &IZUK_DEVICE_INTERFACE,
                                        nullptr,
@@ -89,8 +105,25 @@ EXTERN_C NTSTATUS Izk_AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT Phys
     // RtlCopyUnicodeString copied nothing.
     IoCreateSymbolicLink(&dx->DosSymLink, &dx->NtNameBuffer); // non-fatal: GUID interface is primary
 
+    if (enableNow) {
+        IoSetDeviceInterfaceState(&dx->InterfaceSymbolicLink, TRUE);
+        status = Izk_UsbConfigure(dx);
+        dx->ConfigFailed = !NT_SUCCESS(status);
+        if (NT_SUCCESS(status)) {
+            DbgPrint("IZUKIDIO: mapper mode configured, interface enabled\n");
+        } else {
+            DbgPrint("IZUKIDIO: mapper mode USB configure failed %08X\n", status);
+        }
+    }
+
     deviceObject->Flags &= ~DO_DEVICE_INITIALIZING;
     return STATUS_SUCCESS;
+}
+
+// INF-mode AddDevice: device creation deferred to the PnP start IRP path.
+EXTERN_C NTSTATUS Izk_AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT PhysicalDeviceObject)
+{
+    return Izk_CreateFDO(DriverObject, PhysicalDeviceObject, FALSE);
 }
 
 EXTERN_C void IzkDriverUnload(PDRIVER_OBJECT DriverObject)
