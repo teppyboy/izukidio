@@ -1,8 +1,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31912.275
+# Visual Studio Version 18
+VisualStudioVersion = 18.9.12128.139 oobstable
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "izukidio", "izukidio\izukidio.vcxproj", "{D3E5A2C1-6B47-4F0E-9A18-7C2D5B4E9F60}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "izukidio", "izukidio\izukidio.vcxproj", "{D6A9E7C1-2902-4E7A-9B3C-5DEADBEEF001}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10,10 +10,10 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D3E5A2C1-6B47-4F0E-9A18-7C2D5B4E9F60}.Debug|x64.ActiveCfg = Debug|x64
-		{D3E5A2C1-6B47-4F0E-9A18-7C2D5B4E9F60}.Debug|x64.Build.0 = Debug|x64
-		{D3E5A2C1-6B47-4F0E-9A18-7C2D5B4E9F60}.Release|x64.ActiveCfg = Release|x64
-		{D3E5A2C1-6B47-4F0E-9A18-7C2D5B4E9F60}.Release|x64.Build.0 = Release|x64
+		{D6A9E7C1-2902-4E7A-9B3C-5DEADBEEF001}.Debug|x64.ActiveCfg = Debug|x64
+		{D6A9E7C1-2902-4E7A-9B3C-5DEADBEEF001}.Debug|x64.Build.0 = Debug|x64
+		{D6A9E7C1-2902-4E7A-9B3C-5DEADBEEF001}.Release|x64.ActiveCfg = Release|x64
+		{D6A9E7C1-2902-4E7A-9B3C-5DEADBEEF001}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

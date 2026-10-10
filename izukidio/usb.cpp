@@ -85,7 +85,9 @@ EXTERN_C NTSTATUS Izk_UsbConfigure(PIZUK_DEVICE_EXTENSION dx)
         return STATUS_SUCCESS;  // already configured (resume)
     }
 
-    status = USBD_CreateHandle(dx->Self, dx->LowerDevice, USBD_CLIENT_CONTRACT_VERSION_600, 0, &dx->UsbdHandle);
+    // USBD_CLIENT_CONTRACT_VERSION_600 was removed from modern WDKs; the 0x600
+    // interface version constant is the same value USBD_CreateHandle expects.
+    status = USBD_CreateHandle(dx->Self, dx->LowerDevice, USBD_INTERFACE_VERSION_600, 0, &dx->UsbdHandle);
     if (!NT_SUCCESS(status)) {
         return status;
     }
@@ -182,6 +184,7 @@ EXTERN_C NTSTATUS Izk_UsbVendorClassRequest(PIZUK_DEVICE_EXTENSION dx,
         return STATUS_INSUFFICIENT_RESOURCES;
     }
     UsbBuildVendorRequest(urb,
+                          URB_FUNCTION_VENDOR_DEVICE,
                           (USHORT)sizeof(struct _URB_CONTROL_VENDOR_OR_CLASS_REQUEST),
                           inbound ? USBD_TRANSFER_DIRECTION_IN : USBD_TRANSFER_DIRECTION_OUT,
                           0,                            // reserved bits
@@ -300,6 +303,7 @@ EXTERN_C NTSTATUS Izk_UsbSetSampleRate(PIZUK_DEVICE_EXTENSION dx, ULONG sampleRa
     // bmRequestType 0x22 (class|EP|out), wValue 0x0100 (CS=1, channel 0),
     // wIndex = endpoint | interface<<8, 3-byte big-endian rate.
     UsbBuildVendorRequest(urb,
+                          URB_FUNCTION_VENDOR_DEVICE,
                           (USHORT)sizeof(struct _URB_CONTROL_VENDOR_OR_CLASS_REQUEST),
                           USBD_TRANSFER_DIRECTION_OUT,
                           0x22,                        // bmRequestType reserved bits

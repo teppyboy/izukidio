@@ -6,7 +6,7 @@
 
 static const ULONG IzkFramesPerUrb = IZUK_ISO_PACKETS_PER_URB;   // 8 ms per URB @ FS
 
-static VOID IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context);
+static NTSTATUS IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context);
 
 // Wrap-around helper: index in [0, count)
 #define NEXT_SLOT(i) (((i) + 1) % IZUK_MAX_ISO_URBS)
@@ -123,10 +123,10 @@ static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOI
     return IoCallDriver(dx->LowerDevice, ep->UrbIrp[slot]);
 }
 
-static VOID IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context)
+static NTSTATUS IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context)
 {
     PIZUK_DEVICE_EXTENSION dx = (PIZUK_DEVICE_EXTENSION)Context;
-    PIZUK_ISO_ENDPOINT ep;
+    PIZUK_ISO_ENDPOINT ep = nullptr;
     PURB urb;
     ULONG slot = MAXULONG;
     ULONG i;
@@ -135,7 +135,7 @@ static VOID IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Cont
     UNREFERENCED_PARAMETER(DeviceObject);
 
     if (Irp->Cancel || Irp->IoStatus.Status == STATUS_CANCELLED) {
-        return; // stopping; no re-submit
+        return STATUS_SUCCESS; // stopping; no re-submit
     }
 
     // Find which engine owns this IRP.
@@ -144,7 +144,7 @@ static VOID IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Cont
         if (dx->Out.UrbIrp[i] == Irp) { ep = &dx->Out; slot = i; break; }
     }
     if (slot == MAXULONG) {
-        return;
+        return STATUS_SUCCESS;
     }
 
     urb = ep->Urb[slot];
@@ -178,6 +178,7 @@ static VOID IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Cont
         }
         KeReleaseSpinLock(&ep->Lock, oldIrql);
     }
+    return STATUS_SUCCESS;
 }
 
 static NTSTATUS IzkAllocateEndpointBuffers(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOINT ep)

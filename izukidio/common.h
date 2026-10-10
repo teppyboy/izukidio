@@ -7,8 +7,12 @@
 #include <ntddk.h>
 #define NTSTRSAFE_LIB
 #include <ntstrsafe.h>
+extern "C" {
+// WDK USB headers lack C++ guards; keep C linkage for usbd.lib imports.
 #include <usb.h>
+#include <usbioctl.h>
 #include <usbdlib.h>
+}
 
 #include "protocol.h"
 #include "pcm2902.h"

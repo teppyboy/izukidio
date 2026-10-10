@@ -1,6 +1,7 @@
 // driver.cpp - izukidio DriverEntry / AddDevice / unload.
 // Experimental reimplementation of Behringer USB Audio 2.8.40 (Ploytec stack).
 // Research: docs/research/01-busb2902-sys.md (original DriverEntry/AddDevice behavior).
+#include <initguid.h>   // DEFINE_GUID instantiates IZUK_DEVICE_INTERFACE in this TU only
 #include "common.h"
 
 #pragma code_seg("INIT")
