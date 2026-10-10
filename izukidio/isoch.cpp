@@ -4,12 +4,9 @@
 // URB_FUNCTION_ISOCH_TRANSFER ring with completion-routine re-submission.
 #include "common.h"
 
-static const ULONG IzkFramesPerUrb = IZUK_ISO_PACKETS_PER_URB;   // 8 ms per URB @ FS
+static const ULONG IzkPacketsPerUrb = IZUK_ISO_PACKETS_PER_URB;  // 10 slots / 10 ms (research 06 §3)
 
 static NTSTATUS IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context);
-
-// Wrap-around helper: index in [0, count)
-#define NEXT_SLOT(i) (((i) + 1) % IZUK_MAX_ISO_URBS)
 
 // ASIO shared-area ring access (research 03 §3.1–3.2, byte-exact port of
 // busb2902.sys sub_F1007B30). Engine = dword array: [0]=writeIndex, [1]=readIndex,
@@ -96,11 +93,15 @@ static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOI
     mdl = ep->Mdl[slot];
 
     // Playback: pull this buffer's samples out of the user ring (engine A)
-    // before submission; shortfall stays zero-filled.
-    if (!ep->Inbound && dx->AsioSharedVa != nullptr) {
-        ULONG dwords = ep->FramesPerUrb * ep->BytesPerFrame / 4;
-        RtlZeroMemory(ep->TransferBuffer[slot], ep->FramesPerUrb * ep->BytesPerFrame);
-        Izk_RingRead((PULONG)dx->AsioSharedVa, ep->TransferBuffer[slot], dwords);
+    // before submission; shortfall stays zero-filled. Slot stride is
+    // MaxPacketSize for IN, BytesPerFrame for OUT (research 06 §3).
+    {
+        ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
+        if (!ep->Inbound && dx->AsioSharedVa != nullptr) {
+            ULONG dwords = (ep->FramesPerUrb - 1) * ep->BytesPerFrame / 4;   // slot 0 = skip
+            RtlZeroMemory(ep->TransferBuffer[slot], (ep->FramesPerUrb - 1) * frameStride);
+            Izk_RingRead((PULONG)dx->AsioSharedVa, ep->TransferBuffer[slot] + frameStride, dwords);
+        }
     }
 
     urb->UrbIsochronousTransfer.Hdr.Length = (USHORT)urbSize;
@@ -111,12 +112,21 @@ static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOI
                                                 (ep->Inbound ? USBD_TRANSFER_DIRECTION_IN : 0);
     urb->UrbIsochronousTransfer.TransferBufferMDL = mdl;
     urb->UrbIsochronousTransfer.NumberOfPackets = ep->FramesPerUrb;
+    urb->UrbIsochronousTransfer.TransferBufferLength =
+        ep->FramesPerUrb * (ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame);
     urb->UrbIsochronousTransfer.UrbLink = nullptr;
 
-    for (i = 0; i < ep->FramesPerUrb; ++i) {
-        urb->UrbIsochronousTransfer.IsoPacket[i].Offset = i * (ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame);
-        urb->UrbIsochronousTransfer.IsoPacket[i].Length = (ep->Inbound ? 0 : ep->BytesPerFrame);
-        urb->UrbIsochronousTransfer.IsoPacket[i].Status = USBD_STATUS_SUCCESS;
+    // Measured geometry (research 06 §3): slot 0 is a permanent zero-length
+    // skip slot (drift-correction position), slots 1..N-1 carry audio.
+    {
+        ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
+        ULONG reqLen = ep->BytesPerFrame;
+        for (i = 0; i < ep->FramesPerUrb; ++i) {
+            urb->UrbIsochronousTransfer.IsoPacket[i].Offset = i * frameStride;
+            urb->UrbIsochronousTransfer.IsoPacket[i].Length =
+                (i == 0 || ep->Inbound) ? 0 : reqLen;
+            urb->UrbIsochronousTransfer.IsoPacket[i].Status = USBD_STATUS_SUCCESS;
+        }
     }
 
     IoSetCompletionRoutine(ep->UrbIrp[slot], IzkIsochCompletion, dx, TRUE, TRUE, TRUE);
@@ -139,7 +149,15 @@ static NTSTATUS IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID 
     }
 
     // Find which engine owns this IRP.
-    for (i = 0; i < IZUK_MAX_ISO_URBS; ++i) {
+    for (i = 0; i < dx->In.UrbCount; ++i) {
+        if (dx->In.UrbIrp[i] == Irp)  { ep = &dx->In;  slot = i; break; }
+    }
+    if (ep == nullptr) {
+        for (i = 0; i < dx->Out.UrbCount; ++i) {
+            if (dx->Out.UrbIrp[i] == Irp) { ep = &dx->Out; slot = i; break; }
+        }
+    }
+    for (i = 0; ep == nullptr && i < IZUK_MAX_ISO_URBS; ++i) {
         if (dx->In.UrbIrp[i] == Irp)  { ep = &dx->In;  slot = i; break; }
         if (dx->Out.UrbIrp[i] == Irp) { ep = &dx->Out; slot = i; break; }
     }
@@ -152,17 +170,28 @@ static NTSTATUS IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID 
 
     // Advance the sample clock by the frames actually transferred.
     if (NT_SUCCESS(Irp->IoStatus.Status)) {
-        InterlockedAdd64(&ep->FramesTransferred64, (LONG64)ep->FramesPerUrb);
-        dx->SampleClock.QuadPart = ep->FramesTransferred64;
-        // Publish capture audio into the user ring (engine B) and wake the
-        // ASIO client (registered via 0x220030, research 03 §3).
-        if (ep->Inbound && dx->AsioSharedVa != nullptr) {
-            ULONG dwords = ep->FramesPerUrb * ep->BytesPerFrame / 4;
-            ULONG written = Izk_RingWrite(
-                (PULONG)((PUCHAR)dx->AsioSharedVa + IZUK_ENGINE_SIZE),
-                ep->TransferBuffer[slot], dwords);
-            Izk_AddOverflow(dx, dwords - written);
+        // Publish per iso packet (lengths may differ by the driver's ±4 B trim,
+        // research 06 §3); slot 0 is the zero-length skip slot.
+        ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
+        ULONG bytesDone = 0;
+        for (i = 0; i < ep->FramesPerUrb; ++i) {
+            ULONG len = urb->UrbIsochronousTransfer.IsoPacket[i].Length;
+            if (ep->Inbound) {
+                // Completion Length on IN = bytes the device delivered
+                // (measured: full 196 B = 49 frames every packet, research 06);
+                // ring slots are 4-byte frames, publish len/4 dwords per packet.
+                if (dx->AsioSharedVa != nullptr && len >= 4) {
+                    ULONG dwords = len / 4;
+                    ULONG written = Izk_RingWrite(
+                        (PULONG)((PUCHAR)dx->AsioSharedVa + IZUK_ENGINE_SIZE),
+                        ep->TransferBuffer[slot] + i * frameStride, dwords);
+                    Izk_AddOverflow(dx, dwords - written);
+                }
+            }
+            bytesDone += len;
         }
+        InterlockedAdd64(&ep->FramesTransferred64, (LONG64)(bytesDone / ep->BytesPerFrame));
+        dx->SampleClock.QuadPart = ep->FramesTransferred64;
         if (dx->AsioEvent != nullptr) {
             KeSetEvent(dx->AsioEvent, IO_NO_INCREMENT, FALSE);
         }
@@ -185,13 +214,14 @@ static NTSTATUS IzkAllocateEndpointBuffers(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_
 {
     NTSTATUS status = STATUS_SUCCESS;
     ULONG urbSize = GET_ISO_URB_SIZE(ep->FramesPerUrb);
-    // Capture buffers use MaxPacketSize: PCM2902 IN can deliver 196 B/frame
-    // (wMaxPacketSize) vs the 192 B nominal payload, due to clock drift.
+    // Capture buffers use MaxPacketSize: measured IN completions return the
+    // full 196 B (49 frames) per packet, not the 192 B request (research 06).
     ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
     ULONG i;
 
-    ep->FramesPerUrb = IzkFramesPerUrb;
-    for (i = 0; i < IZUK_MAX_ISO_URBS; ++i) {
+    ep->FramesPerUrb = IzkPacketsPerUrb;
+    ep->UrbCount = ep->Inbound ? IZUK_ISO_URBS_IN : IZUK_ISO_URBS_OUT;
+    for (i = 0; i < ep->UrbCount; ++i) {
         ep->Urb[i] = (PURB)ExAllocatePool2(POOL_FLAG_NON_PAGED, urbSize, IZUK_TAG);
         ep->TransferBuffer[i] = (PUCHAR)ExAllocatePool2(POOL_FLAG_NON_PAGED, ep->FramesPerUrb * frameStride, IZUK_TAG);
         ep->UrbIrp[i] = IoAllocateIrp((CCHAR)(dx->LowerDevice->StackSize + 1), FALSE);
@@ -213,7 +243,7 @@ static void IzkFreeEndpointBuffers(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOINT
 {
     ULONG i;
     UNREFERENCED_PARAMETER(dx);
-    for (i = 0; i < IZUK_MAX_ISO_URBS; ++i) {
+    for (i = 0; i < IZUK_MAX_ISO_URBS; ++i) {   // free all, active count may vary
         if (ep->Mdl[i] != nullptr)          { IoFreeMdl(ep->Mdl[i]); ep->Mdl[i] = nullptr; }
         if (ep->TransferBuffer[i] != nullptr){ ExFreePoolWithTag(ep->TransferBuffer[i], IZUK_TAG); ep->TransferBuffer[i] = nullptr; }
         if (ep->Urb[i] != nullptr)          { ExFreePoolWithTag(ep->Urb[i], IZUK_TAG); ep->Urb[i] = nullptr; }
@@ -242,7 +272,7 @@ EXTERN_C NTSTATUS Izk_IsoStart(PIZUK_DEVICE_EXTENSION dx, BOOLEAN inbound)
     KeInitializeEvent(&ep->StopEvent, NotificationEvent, FALSE);
     ep->ErrorCount = 0;
     ep->FramesTransferred64 = 0;
-    ep->PendingUrbCount = IZUK_MAX_ISO_URBS;
+    ep->PendingUrbCount = (LONG)ep->UrbCount;
     ep->Active = TRUE;
 
     status = IzkAllocateEndpointBuffers(dx, ep);
@@ -252,7 +282,7 @@ EXTERN_C NTSTATUS Izk_IsoStart(PIZUK_DEVICE_EXTENSION dx, BOOLEAN inbound)
         return status;
     }
 
-    for (i = 0; i < IZUK_MAX_ISO_URBS; ++i) {
+    for (i = 0; i < ep->UrbCount; ++i) {
         status = IzkBuildAndSubmitUrb(dx, ep, i);
         if (!NT_SUCCESS(status) && status != STATUS_PENDING) {
             ep->Active = FALSE;
@@ -274,7 +304,7 @@ EXTERN_C NTSTATUS Izk_IsoStop(PIZUK_DEVICE_EXTENSION dx, BOOLEAN inbound)
     }
     ep->Active = FALSE;
 
-    for (i = 0; i < IZUK_MAX_ISO_URBS; ++i) {
+    for (i = 0; i < ep->UrbCount; ++i) {
         if (ep->UrbIrp[i] != nullptr) {
             IoCancelIrp(ep->UrbIrp[i]);
         }
