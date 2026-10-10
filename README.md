@@ -38,6 +38,22 @@ pnputil /add-driver izukidio\izukidio.inf /install
 
 The INF binds `USB\VID_08BB&PID_2900` and `USB\VID_08BB&PID_2902`.
 
+### izukiloader (unsigned-load path, no testsigning)
+
+When Secure Boot keeps testsigning off, the loader maps the same
+`izukidio.sys` through the vendored kdmapper library (MIT, TheCruZ) — no
+separate `kdmapper.exe`:
+
+```bat
+:: after building the solution, from build\Release:
+izukiloader.exe              :: wait for device, unbind in-box driver, map, verify
+izukiloader.exe --install    :: ONSTART scheduled task (SYSTEM) for auto-load at boot
+izukiloader.exe --uninstall  :: remove the task
+```
+
+Requires `izukidio.sys` next to the exe and the vulnerable-driver
+blocklist disabled for the Intel driver it uses.
+
 macOS/Linux: the driver sources can be syntax-checked with clang using the
 git-ignored shims in `.local/wdk-shims/` (see `AGENTS.md`); full builds need
 Windows + WDK.
