@@ -20,7 +20,9 @@ BEHRINGER_2902_X64_2.8.40/
 *.i64
 
 # Build output
+build/
 izukidio/build/
+izukiloader/build/
 *.vcxproj.user
 x64/
 

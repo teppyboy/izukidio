@@ -12,4 +12,12 @@ if not exist "%MSBUILD%" (
 )
 set CONFIG=%1
 if "%CONFIG%"=="" set CONFIG=Debug
-"%MSBUILD%" "%~dp0izukidio\izukidio.vcxproj" /p:Configuration=%CONFIG% /p:Platform=x64 /t:Rebuild /v:m
+
+rem Both artifacts land in build\<CONFIG>\ (SolutionDir forced since we build
+rem .vcxproj directly - without it MSBuild defaults SolutionDir to the project dir).
+rem Forward slashes: a trailing backslash before the closing quote gets eaten
+rem by cmd argv parsing (\" = literal quote) and corrupts the property value.
+set "SOLDIR=%~dp0"
+set "SOLDIR=%SOLDIR:\=/%"
+"%MSBUILD%" "%~dp0izukidio\izukidio.vcxproj" /p:Configuration=%CONFIG% /p:Platform=x64 /p:SolutionDir="%SOLDIR%" /t:Rebuild /v:m || exit /b 1
+"%MSBUILD%" "%~dp0izukiloader\izukiloader.vcxproj" /p:Configuration=%CONFIG% /p:Platform=x64 /p:SolutionDir="%SOLDIR%" /t:Rebuild /v:m || exit /b 1

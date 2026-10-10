@@ -51,7 +51,13 @@ rebuild.bat            :: Debug (default)
 rebuild.bat Release
 ```
 
-Output: `build\Debug\izukidio.sys` / `build\Release\izukidio.sys` (+ INF, PDB).
+Output (both projects, in `build\<CONFIG>\`):
+
+| File | Purpose |
+|---|---|
+| `izukidio.sys` + `izukidio.inf` (+ PDB) | the driver |
+| `izukiloader.exe` | unsigned-load path (below); needs `izukidio.sys` next to it |
+
 The .cat is intentionally not generated (`EnableInf2cat=false`); test signing is
 done out of band.
 
