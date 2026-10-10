@@ -22,9 +22,9 @@
 #include <vector>
 #include <filesystem>
 
-#include "kdmapper/include/kdmapper.hpp"
-#include "kdmapper/include/intel_driver.hpp"
-#include "kdmapper/include/utils.hpp"
+#include "kdmapper/kdmapper/include/kdmapper.hpp"
+#include "kdmapper/kdmapper/include/intel_driver.hpp"
+#include "kdmapper/kdmapper/include/utils.hpp"
 
 static std::wstring ExeDir()
 {

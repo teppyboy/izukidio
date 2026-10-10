@@ -41,8 +41,9 @@ The INF binds `USB\VID_08BB&PID_2900` and `USB\VID_08BB&PID_2902`.
 ### izukiloader (unsigned-load path, no testsigning)
 
 When Secure Boot keeps testsigning off, the loader maps the same
-`izukidio.sys` through the vendored kdmapper library (MIT, TheCruZ) — no
-separate `kdmapper.exe`:
+`izukidio.sys` through the kdmapper library (MIT, TheCruZ, pinned as a
+git submodule at `izukiloader/kdmapper` — run
+`git submodule update --init` after cloning) — no separate `kdmapper.exe`:
 
 ```bat
 :: after building the solution, from build\Release:
