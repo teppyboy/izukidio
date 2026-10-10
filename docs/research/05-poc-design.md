@@ -31,10 +31,10 @@ izukidio.sys  (WDM, FDO DeviceType 0x8002 — matches original validation)
   driver.cpp  DriverEntry/AddDevice/dispatch wiring, DosSymLink
   device.cpp  create/close, PnP start (IzkPnpStartCompletion), shared-area
               register/unregister (0x220030), 0x22000C state blob, props
-  usb.cpp     USBD_CreateHandle, select config (ifc 1 alt 0), endpoint scan,
-              vendor/class passthrough (0x220008), SET_CUR sample rate, cycle-port
-  isoch.cpp   ISOCH URB ring (4 URBs x 8 packets), ring writer/reader port of
-              sub_F1007B30, overflow accounting, ASIO event signal
+  usb.cpp     USBD_CreateHandle, select config (ifc1 alt1 + ifc2 alt1), dual
+              endpoint scan, vendor/class passthrough (0x220008), SET_CUR sample rate
+  isoch.cpp   ISOCH URB ring, ring writer/reader port of sub_F1007B30,
+              overflow accounting, ASIO event signal
   ioctl.cpp   IOCTL contract (below)
   protocol.h  byte-exact contract constants
   pcm2902.h   UAC request shapes (bmRequestType/bRequest/wValue/wIndex/wLength)
@@ -86,11 +86,18 @@ Divergences from the original (deliberate, revisit on hardware bring-up):
 1. Original walks **512-byte packets** with a per-packet payload parser and
    channel DMA encode/decode callbacks; izukidio copies whole-URB payload
    assuming 4-byte slots (`channels × bytesPerSample`, padded to 4).
-2. Original pools 32 IN / 4 OUT pre-built transactions and computes depth from
-   `30*rate/(1000*bufMs)` clamped 4..31; izukidio re-submits 4 URBs × 8 packets.
+2. Original runs **10-slot, 10 ms URBs with a zero-length slot 0** in pools of
+   12 IN / 3 OUT (measured, research 06 §3); izukidio re-submits 4 URBs × 8
+   packets with uniform fills. The slot-0 skip and per-packet publish are not
+   implemented yet — see research 06 §4 for the required deltas.
 3. Overflow counter is not floored at 0 (original uses `InterlockedExchange`).
 4. Feedback endpoint (`sub_F1013EB0` resync, skip-4-frames) not yet consumed;
-   PCM2902 explicit-feedback variant only.
+   the real UMC22 has **no** feedback endpoint (research 06 §6), so this stays
+   dormant — slot-0 skip is the observed resync mechanism instead.
+5. **Rate ≠ alternate setting**: the measured session served 44.1 kHz audio
+   through the 48 kHz alternate (research 06 §3); izukidio currently fixes the
+   rate from the alt. Needs the repack model from 06 §4 before any non-48k
+   session works.
 
 ## 5. Driver bring-up order (Windows machine)
 
@@ -110,11 +117,15 @@ Divergences from the original (deliberate, revisit on hardware bring-up):
 - **Coexistence with usbaudio.sys**: the INF claims the raw USB device; the
   in-box USB Audio stack will not also bind. If MME/WASAPI is needed in
   parallel, plan a lower-filter or swap the INF to a custom class.
-- **24-bit padding**: PCM2902 24-in-4-byte slot assumption needs an
-  alt-setting descriptor cross-check on hardware.
-- **44.1 kHz**: needs occasional 9-byte over-packets at FS; PoC uses 48000-sized
-  slots (same as original alternate walk).
+- **URB geometry mismatch** (divergence 2): measured original uses 10-slot
+  10 ms URBs, pools 12 IN / 3 OUT, and a zero-length slot 0 for drift resync
+  (research 06). Streaming through the ASIO DLL will likely need this before
+  it is glitch-free.
+- **Rate repacking** (divergence 5): 44.1 k through the 48 k alt is measured
+  behavior of the original (research 06 §3); izukidio is 48 k-only until the
+  repack model lands.
 - **xHCI timing**: ASAP isoched URBs pace fine, but original used StartFrame
   math; revisit if stutter appears.
 - Property command IDs 10/12/19/20 verified from DLL strings, exact payloads
   pending first live session.
+- Detailed packet-level evidence for everything above: **research 06**.
