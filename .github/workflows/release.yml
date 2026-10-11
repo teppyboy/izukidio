@@ -66,9 +66,9 @@ jobs:
           if (-not (Test-Path $toolset)) {
             # Fall back to the explicit VSIX install (quiet mode is broken on
             # VS >= 17.14, so tolerate a non-zero exit and re-verify).
-            $vsix = Get-ChildItem `
-              "C:\Program Files (x86)\Windows Kits\10\Vsix\VS2022" +
-              "\*\amd64\WDK.vsix" `
+            $vsixPat = "C:\Program Files (x86)\Windows Kits\10" +
+              "\Vsix\VS2022\*\amd64\WDK.vsix"
+            $vsix = Get-ChildItem $vsixPat `
               -ErrorAction SilentlyContinue |
               Sort-Object { $_.Directory.Name } -Descending |
               Select-Object -First 1
