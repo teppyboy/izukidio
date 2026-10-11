@@ -70,13 +70,47 @@ static ULONG Izk_RingRead(PULONG engine, PUCHAR dst, ULONG lenDwords)
 
 // Account dropped capture bytes into tail+28 (research 03 §3.2,
 // sub_F1017340 overflow accounting; frame size 4 bytes per dword slot).
+// The original floors the counter at 0 (divergence 3 in 05 §5): a CAS loop
+// clamps negative results instead of letting the counter go below zero.
 static VOID Izk_AddOverflow(PIZUK_DEVICE_EXTENSION dx, ULONG droppedDwords)
 {
     volatile LONG* p = (volatile LONG*)((PUCHAR)dx->AsioSharedVa
                                         + IZUK_SHARED_TAIL_OFFSET + IZUK_TAIL_OVERFLOW_OFFS);
-    if (droppedDwords != 0) {
-        InterlockedAdd(p, -(LONG)droppedDwords);
+    LONG oldVal;
+    LONG newVal;
+
+    if (droppedDwords == 0) {
+        return;
     }
+    for (;;) {
+        oldVal = *p;
+        newVal = oldVal - (LONG)droppedDwords;
+        if (newVal > 0) {
+            newVal = 0;
+        }
+        if (InterlockedCompareExchange(p, newVal, oldVal) == oldVal) {
+            break;
+        }
+    }
+}
+
+// Per-slot request length in bytes (research 01 §5.3, sub_F1018BE0 pattern
+// tables). Non-integral-ms rates (44100/88200/176400) need fractional-byte
+// slots: at 44.1 kHz the original requests 44 dwords + 1 dword every 10th
+// slot (avg 44.1 dwords = 176.4 B/ms). We spread the +1 dword over each
+// 10-slot URB (slot 0 of every URB), which preserves the exact average.
+// ponytail: only exact for 4-byte frames (16-bit stereo, UMC22 reality);
+// other frame sizes fall back to a uniform request.
+static ULONG IzkSlotRequestBytes(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOINT ep, ULONG slot)
+{
+    ULONG bytes = ep->BytesPerFrame;
+
+    if (dx->SampleRate % 1000 != 0 && ep->BytesPerFrame == 4) {
+        if (slot % 10 == 0) {
+            bytes += 4;
+        }
+    }
+    return bytes;
 }
 
 static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOINT ep, ULONG slot)
@@ -93,15 +127,16 @@ static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOI
     mdl = ep->Mdl[slot];
 
     // Playback: pull this buffer's samples out of the user ring (engine A)
-    // before submission; shortfall stays zero-filled. Slot stride is
-    // MaxPacketSize for IN, BytesPerFrame for OUT (research 06 §3).
-    {
-        ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
-        ULONG totalBytes = ep->FramesPerUrb * frameStride;
-        if (!ep->Inbound && dx->AsioSharedVa != nullptr) {
-            ULONG dwords = totalBytes / 4;
-            RtlZeroMemory(ep->TransferBuffer[slot], totalBytes);
-            Izk_RingRead((PULONG)dx->AsioSharedVa, ep->TransferBuffer[slot], dwords);
+    // before submission; shortfall stays zero-filled. OUT slots are packed at
+    // their cumulative request offsets (44.1 kHz pattern, research 01 §5.3);
+    // IN slots use the MaxPacketSize stride (device may deliver 196 B).
+    if (!ep->Inbound && dx->AsioSharedVa != nullptr) {
+        PUCHAR dst = ep->TransferBuffer[slot];
+        RtlZeroMemory(dst, ep->FramesPerUrb * ep->MaxPacketSize);
+        for (i = 0; i < ep->FramesPerUrb; ++i) {
+            ULONG slotBytes = IzkSlotRequestBytes(dx, ep, i);
+            Izk_RingRead((PULONG)dx->AsioSharedVa, dst, slotBytes / 4);
+            dst += slotBytes;
         }
     }
 
@@ -109,31 +144,42 @@ static NTSTATUS IzkBuildAndSubmitUrb(PIZUK_DEVICE_EXTENSION dx, PIZUK_ISO_ENDPOI
     urb->UrbIsochronousTransfer.Hdr.Function = URB_FUNCTION_ISOCH_TRANSFER;
     urb->UrbIsochronousTransfer.Hdr.Status = USBD_STATUS_SUCCESS;
     urb->UrbIsochronousTransfer.PipeHandle = ep->PipeHandle;
-    urb->UrbIsochronousTransfer.TransferFlags = USBD_START_ISO_TRANSFER_ASAP |
-                                                (ep->Inbound ? USBD_TRANSFER_DIRECTION_IN : 0);
+    // Absolute StartFrame pacing like the original (sub_F1022390, research
+    // 01 §5.3): no ASAP, StartFrame += packet count per cycle.
+    urb->UrbIsochronousTransfer.TransferFlags =
+        (ep->Inbound ? USBD_TRANSFER_DIRECTION_IN : 0);
+    urb->UrbIsochronousTransfer.StartFrame = ep->NextStartFrame;
     urb->UrbIsochronousTransfer.TransferBufferMDL = mdl;
     urb->UrbIsochronousTransfer.NumberOfPackets = ep->FramesPerUrb;
-    urb->UrbIsochronousTransfer.TransferBufferLength =
-        ep->FramesPerUrb * (ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame);
     urb->UrbIsochronousTransfer.UrbLink = nullptr;
 
-    // Measured geometry (research 06 §3.1): all 10 slots submit data; the
-    // original's per-slot request = client-queue bytes (zero when starving),
-    // izukidio requests BytesPerFrame uniformly (192 B @48k, matching the
-    // original's measured submit side). The device may deliver more per slot
-    // (196 B); the buffer stride reserves MaxPacketSize for that.
+    // All 10 slots submit data (research 06 §3.1). IN requests BytesPerFrame
+    // uniformly (measured: 192 B @48k alt); OUT follows the per-rate pattern
+    // (44.1 kHz: +1 dword every 10th slot). Offsets are exclusive-prefix
+    // cumulative, same convention as sub_F1022390.
     {
-        ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
-        ULONG reqLen = ep->BytesPerFrame;
+        ULONG inStride = ep->MaxPacketSize;
+        ULONG running = 0;
         for (i = 0; i < ep->FramesPerUrb; ++i) {
-            urb->UrbIsochronousTransfer.IsoPacket[i].Offset = i * frameStride;
-            urb->UrbIsochronousTransfer.IsoPacket[i].Length = reqLen;
+            ULONG slotBytes = ep->Inbound ? ep->BytesPerFrame
+                                          : IzkSlotRequestBytes(dx, ep, i);
+            urb->UrbIsochronousTransfer.IsoPacket[i].Offset =
+                ep->Inbound ? i * inStride : running;
+            urb->UrbIsochronousTransfer.IsoPacket[i].Length = slotBytes;
             urb->UrbIsochronousTransfer.IsoPacket[i].Status = USBD_STATUS_SUCCESS;
+            running += slotBytes;
         }
+        urb->UrbIsochronousTransfer.TransferBufferLength = running;
     }
 
     IoSetCompletionRoutine(ep->UrbIrp[slot], IzkIsochCompletion, dx, TRUE, TRUE, TRUE);
-    return IoCallDriver(dx->LowerDevice, ep->UrbIrp[slot]);
+    {
+        NTSTATUS st = IoCallDriver(dx->LowerDevice, ep->UrbIrp[slot]);
+        if (NT_SUCCESS(st) || st == STATUS_PENDING) {
+            ep->NextStartFrame += ep->FramesPerUrb;   // sub_F1015E10 tail: StartFrame += packetCount
+        }
+        return st;
+    }
 }
 
 static NTSTATUS IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context)
@@ -178,7 +224,7 @@ static NTSTATUS IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID 
         // zero-length slot anywhere (queue starvation / device-side). IN ring
         // slots are 4-byte frames, publish len/4 dwords per packet.
         ULONG frameStride = ep->Inbound ? ep->MaxPacketSize : ep->BytesPerFrame;
-        ULONG framesDone = 0;
+        ULONG bytesDone = 0;
         for (i = 0; i < ep->FramesPerUrb; ++i) {
             ULONG len = urb->UrbIsochronousTransfer.IsoPacket[i].Length;
             if (ep->Inbound) {
@@ -192,11 +238,13 @@ static NTSTATUS IzkIsochCompletion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID 
                         ep->TransferBuffer[slot] + i * frameStride, dwords);
                     Izk_AddOverflow(dx, dwords - written);
                 }
-                framesDone += len / 4;
-            } else {
-                framesDone += len / ep->BytesPerFrame;
             }
+            bytesDone += len;
         }
+        // Convert delivered bytes to frames: 4-byte frames count by dwords
+        // (variable 176/180 B slots at 44.1 kHz, research 01 §5.3).
+        ULONG framesDone = (ep->BytesPerFrame == 4) ? bytesDone / 4
+                                                    : bytesDone / ep->BytesPerFrame;
         InterlockedAdd64(&ep->FramesTransferred64, (LONG64)framesDone);
         dx->SampleClock.QuadPart = ep->FramesTransferred64;
         if (dx->AsioEvent != nullptr) {
@@ -272,9 +320,23 @@ EXTERN_C NTSTATUS Izk_IsoStart(PIZUK_DEVICE_EXTENSION dx, BOOLEAN inbound)
     }
 
     // Bytes per frame: channels * sample size; FS isoch = 1 ms per frame.
-    // 44100 Hz needs occasional 9-byte over-packets; PoC pads to the 48000-sized
-    // slot (PCM2902 alternates encode this via wMaxPacketSize).
+    // 44100 Hz needs occasional +1-dword over-slots (IzkSlotRequestBytes).
     ep->BytesPerFrame = (inbound ? dx->ChannelsIn : dx->ChannelsOut) * dx->BytesPerSample;
+
+    // Seed absolute StartFrame pacing from the bus frame number
+    // (research 01 §5.3; sub_F1022390 takes an absolute StartFrame).
+    {
+        struct _URB_GET_CURRENT_FRAME_NUMBER frameUrb;
+        RtlZeroMemory(&frameUrb, sizeof(frameUrb));
+        frameUrb.Length = sizeof(frameUrb);
+        frameUrb.Function = URB_FUNCTION_GET_CURRENT_FRAME_NUMBER;
+        status = Izk_UsbSendUrbSync(dx, (PURB)&frameUrb);
+        if (NT_SUCCESS(status)) {
+            ep->NextStartFrame = frameUrb.FrameNumber + 1;
+        } else {
+            ep->NextStartFrame = 0;
+        }
+    }
 
     KeInitializeEvent(&ep->StopEvent, NotificationEvent, FALSE);
     ep->ErrorCount = 0;

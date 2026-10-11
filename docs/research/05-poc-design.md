@@ -89,20 +89,25 @@ Divergences from the original (deliberate, revisit on hardware bring-up):
 2. Original runs **10-slot, 10 ms URBs** in pools of 12 IN / 3 OUT (measured,
    research 06 §3; submit-side per-slot length = bytes pulled from the client
    queue — a zero-length slot means starvation, research 01 §5.3). izukidio
-   re-submits 12/3 URBs × 10 packets with ASAP and uniform fills; per-packet
-   completion publish is implemented (06 §3.1). The original uses absolute
-   StartFrame (+10 per cycle) instead of ASAP — divergence kept unless
-   hardware bring-up shows pacing glitches.
-3. Overflow counter is not floored at 0 (original uses `InterlockedExchange`).
+   now matches: 12/3 URBs × 10 packets, absolute StartFrame pacing seeded
+   from `URB_FUNCTION_GET_CURRENT_FRAME_NUMBER` and advanced by the packet
+   count per cycle (01 §5.3), and per-packet completion publish (06 §3.1).
+   Remaining sub-divergence: izukidio derives per-slot request lengths from
+   the rate pattern (`IzkSlotRequestBytes`, uniform BytesPerFrame except
+   +1 dword every 10th slot at 44.1 kHz) instead of pulling per-slot bytes
+   from the client queue — the ring model gives the same average rate.
+3. ~~Overflow counter is not floored at 0~~ **CLOSED**: `Izk_AddOverflow` now
+   floors via a CAS loop (original semantics).
 4. Feedback endpoint (`sub_F1013EB0` resync, skip-4-frames) not yet consumed;
    the real UMC22 has **no** feedback endpoint (research 06 §6), so this stays
    dormant — the original's resync mechanism is per-slot request trims and
    queue-starvation zero-length packets (research 01 §5.3), not a reserved
    slot.
 5. **Rate ≠ alternate setting**: the measured session served 44.1 kHz audio
-   through the 48 kHz alternate (research 06 §3); izukidio currently fixes the
-   rate from the alt. Needs the repack model from 06 §4 before any non-48k
-   session works.
+   through the 48 kHz alternate (research 06 §3). izukidio now follows
+   delivered `IsoPacket[i].Length` on IN (rate-agnostic) and applies the
+   44.1 kHz request pattern on OUT (research 01 §5.3); the alt-setting is
+   still fixed at 48 kHz — matching the measured original behavior.
 
 ## 5. Driver bring-up order (Windows machine)
 

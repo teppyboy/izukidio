@@ -27,7 +27,7 @@ extern "C" {
 #define IZUK_DOS_DEVNAME  L"\\DosDevices\\IZUKIDIO"
 
 #define IZUK_MAX_ISO_URBS      12
-#define IZUK_ISO_PACKETS_PER_URB 10         // measured: 10-slot 10 ms URBs, slot 0 = zero-length skip (research 06 §3)
+#define IZUK_ISO_PACKETS_PER_URB 10         // measured: 10-slot 10 ms URBs, all slots carry data (research 06 §3.1)
 #define IZUK_ISO_URBS_IN       12           // measured pool: 12 in-flight IN URBs (120 ms)
 #define IZUK_ISO_URBS_OUT      3            // measured pool: 3 in-flight OUT URBs (30 ms)
 #define IZUK_MAX_CHANNELS      8
@@ -37,8 +37,9 @@ typedef struct _IZUK_ISO_ENDPOINT {
     USBD_PIPE_HANDLE    PipeHandle;
     ULONG               MaxPacketSize;
     ULONG               BytesPerFrame;      // packed audio bytes per USB frame
-    ULONG               FramesPerUrb;       // ISO packets per URB (10, incl. zero-length slot 0)
+    ULONG               FramesPerUrb;       // ISO packets per URB (10, all data slots)
     ULONG               UrbCount;           // in-flight URB pool size (12 IN / 3 OUT, research 06 §3)
+    ULONG               NextStartFrame;     // absolute USB frame number for the next URB (01 §5.3)
     BOOLEAN             Inbound;
     BOOLEAN             Active;
     PIRP                UrbIrp[IZUK_MAX_ISO_URBS];
