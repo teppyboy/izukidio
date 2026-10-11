@@ -88,7 +88,15 @@ Full analysis: `04-win10-11-compat.md`.
 - IDA Pro 9.4 (idalib, ida-domain API) — `busb2902.sys` decompilation (main driver).
 - Ghidra (headless + MCP) — `busbwdm.sys`.
 - radare2 + pefile — `busbasio_x64.dll` / `busbasio.dll` and cross-checks.
+- USBPcap capture of the real stack driving a UMC22 — see `06-umc22-pcap.md`.
 - Web research against Microsoft Learn (USBD deprecation, PortCls status, signing,
   isochronous transfer APIs) — see `04-win10-11-compat.md` for source URLs.
 
 Everything here is from **static analysis only**; the driver was never executed.
+
+## 5. Consolidated status
+
+Read `07-findings.md` first for the current state: all major open questions
+about the URB geometry, slot semantics, and rate repacking are resolved
+against both the decompilation and a live USBPcap capture; the PoC status
+and remaining divergences are tracked there and in `05-poc-design.md`.
