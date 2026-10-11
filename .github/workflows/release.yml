@@ -97,7 +97,16 @@ jobs:
 
       - name: Build (Release x64)
         shell: cmd
-        run: build.bat Release
+        # CI: use the msbuild placed on PATH by setup-msbuild (VS2022).
+        # build.bat's vswhere discovery is fragile inside cmd paren blocks
+        # (see build.bat); keep the local script for Windows workstations.
+        run: |
+          msbuild izukidio\izukidio.vcxproj ^
+            /p:Configuration=Release /p:Platform=x64 ^
+            /p:SolutionDir=%CD%/ /t:Rebuild /v:m || exit /b 1
+          msbuild izukiloader\izukiloader.vcxproj ^
+            /p:Configuration=Release /p:Platform=x64 ^
+            /p:SolutionDir=%CD%/ /t:Rebuild /v:m || exit /b 1
 
       - name: Collect artifacts
         shell: pwsh
