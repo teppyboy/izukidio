@@ -328,8 +328,8 @@ EXTERN_C NTSTATUS Izk_IsoStart(PIZUK_DEVICE_EXTENSION dx, BOOLEAN inbound)
     {
         struct _URB_GET_CURRENT_FRAME_NUMBER frameUrb;
         RtlZeroMemory(&frameUrb, sizeof(frameUrb));
-        frameUrb.Length = sizeof(frameUrb);
-        frameUrb.Function = URB_FUNCTION_GET_CURRENT_FRAME_NUMBER;
+        frameUrb.Hdr.Length = sizeof(frameUrb);
+        frameUrb.Hdr.Function = URB_FUNCTION_GET_CURRENT_FRAME_NUMBER;
         status = Izk_UsbSendUrbSync(dx, (PURB)&frameUrb);
         if (NT_SUCCESS(status)) {
             ep->NextStartFrame = frameUrb.FrameNumber + 1;

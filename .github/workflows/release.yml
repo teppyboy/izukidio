@@ -110,18 +110,27 @@ jobs:
           Get-ChildItem $pt -ErrorAction SilentlyContinue |
             Select-Object Name
 
-      - name: Build (Release x64)
-        shell: cmd
-        # CI: use the msbuild placed on PATH by setup-msbuild (VS2022).
-        # build.bat's vswhere discovery is fragile inside cmd paren blocks
-        # (see build.bat); keep the local script for Windows workstations.
+      - name: Build (Release x64, amd64 MSBuild)
+        shell: pwsh
+        # CI: amd64 MSBuild host - the 32-bit host tries to load
+        # x86\InfVerif.dll, which WDK 26100 does not ship.
         run: |
-          msbuild izukidio\izukidio.vcxproj ^
-            /p:Configuration=Release /p:Platform=x64 ^
-            /p:SolutionDir=%CD%/ /t:Rebuild /v:m || exit /b 1
-          msbuild izukiloader\izukiloader.vcxproj ^
-            /p:Configuration=Release /p:Platform=x64 ^
-            /p:SolutionDir=%CD%/ /t:Rebuild /v:m || exit /b 1
+          $ErrorActionPreference = 'Stop'
+          $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio" +
+            "\Installer\vswhere.exe"
+          $vsInstall = & $vswhere -latest -products * `
+            -requires Microsoft.Component.MSBuild `
+            -version "[17.0,18.0)" -property installationPath -latest
+          $msbuild = Join-Path $vsInstall `
+            "MSBuild\Current\Bin\amd64\MSBuild.exe"
+          & $msbuild izukidio\izukidio.vcxproj `
+            /p:Configuration=Release /p:Platform=x64 `
+            "/p:SolutionDir=$env:GITHUB_WORKSPACE\/" /t:Rebuild /v:m
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $msbuild izukiloader\izukiloader.vcxproj `
+            /p:Configuration=Release /p:Platform=x64 `
+            "/p:SolutionDir=$env:GITHUB_WORKSPACE\/" /t:Rebuild /v:m
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Collect artifacts
         shell: pwsh
