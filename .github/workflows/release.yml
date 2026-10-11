@@ -95,6 +95,30 @@ jobs:
             Write-Host "VSIX exit code: $($p.ExitCode)"
           }
 
+      - name: Diagnostics (WDK/toolset layout)
+        shell: pwsh
+        run: |
+          Write-Host '--- Windows Kits Include ---'
+          Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Include' `
+            -ErrorAction SilentlyContinue | Select-Object Name
+          Write-Host '--- Windows Kits build ---'
+          Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\build' `
+            -ErrorAction SilentlyContinue | Select-Object Name
+          Write-Host '--- km headers ---'
+          Get-ChildItem 'C:\Program Files (x86)\Windows Kits' `
+            -Recurse -Filter ntddk.h -ErrorAction SilentlyContinue |
+            Select-Object -First 5 FullName
+          Write-Host '--- VS instances ---'
+          $vswhere = 'C:\Program Files (x86)\Microsoft Visual Studio' +
+            '\Installer\vswhere.exe'
+          & $vswhere -latest -products * -property installationPath
+          Write-Host '--- PlatformToolsets ---'
+          $pt = 'C:\Program Files\Microsoft Visual Studio\2022' +
+            '\*\MSBuild\Microsoft\VC\v170\Platforms\x64' +
+            '\PlatformToolsets'
+          Get-ChildItem $pt -ErrorAction SilentlyContinue |
+            Select-Object Name
+
       - name: Build (Release x64)
         shell: cmd
         # CI: use the msbuild placed on PATH by setup-msbuild (VS2022).
