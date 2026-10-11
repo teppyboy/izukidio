@@ -11,9 +11,6 @@ on:
 permissions:
   contents: write
 
-env:
-  WDK_URL: https://go.microsoft.com/fwlink/?linkid=2272234
-
 jobs:
   build:
     name: Build (Release x64)
@@ -30,70 +27,65 @@ jobs:
         with:
           vs-version: '[17.0,18.0)'
 
-      - name: Install WDK (skip if present)
+      - name: Install SDK + WDK 26100.6584 (winget, pinned)
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $taskPat = "C:\Program Files*\Windows Kits\10\build\*\bin\" +
-            "Microsoft.DriverKit.Build.Tasks.17.0.dll"
-          $wdkTask = Get-ChildItem $taskPat `
-            -ErrorAction SilentlyContinue |
-            Sort-Object { $_.Directory.Parent.Name } -Descending |
-            Select-Object -First 1
-          $wdfDir = Get-ChildItem `
-            "C:\Program Files*\Windows Kits\10\Include\*\wdf" `
-            -Directory -ErrorAction SilentlyContinue |
-            Sort-Object { $_.Parent.Name } -Descending |
-            Select-Object -First 1
-
-          if ($wdfDir -and $wdkTask) {
-            Write-Host "WDK already installed: $($wdfDir.Parent.Name)"
+          $sdk = "C:\Program Files (x86)\Windows Kits\10\Include" +
+            "\10.0.26100.6584"
+          $wdkTaskPat = "C:\Program Files (x86)\Windows Kits\10\build" +
+            "\10.0.26100.6584\bin\Microsoft.DriverKit.Build.Tasks.17.0.dll"
+          if (-not (Test-Path $sdk)) {
+            Write-Host "Installing Windows SDK 10.0.26100..."
+            winget install --id Microsoft.WindowsSDK.10.0.26100 `
+              --exact --silent --accept-package-agreements `
+              --accept-source-agreements
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } else {
-            Write-Host "Installing WDK 26100..."
-            $installer = "$env:TEMP\wdksetup.exe"
-            Invoke-WebRequest -Uri "${{ env.WDK_URL }}" `
-              -OutFile $installer -UseBasicParsing
-            $args = "/quiet", "/norestart", "/features", "+"
-            $proc = Start-Process -FilePath $installer `
-              -ArgumentList $args -Wait -NoNewWindow -PassThru
-            Write-Host "WDK installer exit code: $($proc.ExitCode)"
-            if ($proc.ExitCode -ne 0) { exit 1 }
+            Write-Host "SDK 10.0.26100.6584 present"
           }
-
-          # Wire the WDK VSIX into the VS2022 MSBuild instance.
-          $vswhere = "${env:ProgramFiles(x86)}" +
-            "\Microsoft Visual Studio\Installer\vswhere.exe"
-          $vsInstall = & $vswhere -products * `
+          if (-not (Test-Path $wdkTaskPat)) {
+            Write-Host "Installing Windows WDK 10.0.26100..."
+            winget install --id Microsoft.WindowsWDK.10.0.26100 `
+              --exact --silent --accept-package-agreements `
+              --accept-source-agreements
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } else {
+            Write-Host "WDK 10.0.26100.6584 present"
+          }
+          # wdksetup integrates the WDK VSIX into every VS 2022 install it
+          # finds. Verify the toolset landed; fail early with a clear message.
+          $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio" +
+            "\Installer\vswhere.exe"
+          $vsInstall = & $vswhere -latest -products * `
             -requires Microsoft.Component.MSBuild `
-            -version "[17.0,18.0)" `
-            -property installationPath -latest
-          if (-not $vsInstall) {
-            Write-Error "Visual Studio 2022 with MSBuild not found"
+            -version "[17.0,18.0)" -property installationPath -latest
+          $toolset = Join-Path $vsInstall `
+            "MSBuild\Microsoft\VC\v170\Platforms\x64" +
+            "\PlatformToolsets\WindowsKernelModeDriver10.0"
+          if (-not (Test-Path $toolset)) {
+            # Fall back to the explicit VSIX install (quiet mode is broken on
+            # VS >= 17.14, so tolerate a non-zero exit and re-verify).
+            $vsix = Get-ChildItem `
+              "C:\Program Files (x86)\Windows Kits\10\Vsix\VS2022" +
+              "\*\amd64\WDK.vsix" `
+              -ErrorAction SilentlyContinue |
+              Sort-Object { $_.Directory.Name } -Descending |
+              Select-Object -First 1
+            if ($vsix) {
+              $vsixInstaller = Join-Path $vsInstall `
+                "Common7\IDE\VSIXInstaller.exe"
+              $p = Start-Process -FilePath $vsixInstaller `
+                -ArgumentList "/q", $vsix.FullName `
+                -Wait -NoNewWindow -PassThru
+              Write-Host "VSIX exit code: $($p.ExitCode)"
+            }
+          }
+          if (-not (Test-Path $toolset)) {
+            Write-Error "WindowsKernelModeDriver10.0 toolset missing in VS2022"
             exit 1
           }
-          Write-Host "Visual Studio: $vsInstall"
-
-          $wdkTask = Get-ChildItem $taskPat `
-            -ErrorAction SilentlyContinue |
-            Sort-Object { $_.Directory.Parent.Name } -Descending |
-            Select-Object -First 1
-          if (-not $wdkTask) {
-            Write-Error "WDK MSBuild task for VS2022 not found"
-            exit 1
-          }
-
-          $vsixInstaller = Join-Path $vsInstall `
-            "Common7\IDE\VSIXInstaller.exe"
-          $vsixFiles = Get-ChildItem `
-            "C:\Program Files*\Windows Kits\10\Vsix\*\WDK.vsix" `
-            -Recurse -ErrorAction SilentlyContinue
-          foreach ($vsix in $vsixFiles) {
-            Write-Host "Installing VSIX: $($vsix.FullName)"
-            $p = Start-Process -FilePath $vsixInstaller `
-              -ArgumentList "/q", $vsix.FullName `
-              -Wait -NoNewWindow -PassThru
-            Write-Host "VSIX exit code: $($p.ExitCode)"
-          }
+          Write-Host "WDK toolset verified: $toolset"
 
       - name: Diagnostics (WDK/toolset layout)
         shell: pwsh
