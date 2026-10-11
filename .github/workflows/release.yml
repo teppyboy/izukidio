@@ -31,13 +31,18 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          $winget = Get-Command winget -ErrorAction SilentlyContinue
+          if (-not $winget) {
+            $winget = "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe"
+          }
+          $winget = $winget.ToString()
           $sdk = "C:\Program Files (x86)\Windows Kits\10\Include" +
             "\10.0.26100.6584"
           $wdkTaskPat = "C:\Program Files (x86)\Windows Kits\10\build" +
             "\10.0.26100.6584\bin\Microsoft.DriverKit.Build.Tasks.17.0.dll"
           if (-not (Test-Path $sdk)) {
             Write-Host "Installing Windows SDK 10.0.26100..."
-            winget install --id Microsoft.WindowsSDK.10.0.26100 `
+            & $winget install --id Microsoft.WindowsSDK.10.0.26100 `
               --exact --silent --accept-package-agreements `
               --accept-source-agreements
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -46,7 +51,7 @@ jobs:
           }
           if (-not (Test-Path $wdkTaskPat)) {
             Write-Host "Installing Windows WDK 10.0.26100..."
-            winget install --id Microsoft.WindowsWDK.10.0.26100 `
+            & $winget install --id Microsoft.WindowsWDK.10.0.26100 `
               --exact --silent --accept-package-agreements `
               --accept-source-agreements
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
