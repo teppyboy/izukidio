@@ -12,9 +12,6 @@ permissions:
   contents: write
 
 env:
-  WDK_TASK: >-
-    C:\Program Files*\Windows Kits\10\build\*\bin\
-    Microsoft.DriverKit.Build.Tasks.17.0.dll
   WDK_URL: https://go.microsoft.com/fwlink/?linkid=2272234
 
 jobs:
@@ -37,7 +34,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $taskPat = "${{ env.WDK_TASK }}"
+          $taskPat = "C:\Program Files*\Windows Kits\10\build\*\bin\" +
+            "Microsoft.DriverKit.Build.Tasks.17.0.dll"
           $wdkTask = Get-ChildItem $taskPat `
             -ErrorAction SilentlyContinue |
             Sort-Object { $_.Directory.Parent.Name } -Descending |
