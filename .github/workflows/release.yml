@@ -1,0 +1,172 @@
+name: CI release
+
+# Build the driver + loader on every push (CI release per commit) and on
+# demand. The archive is password-protected ("izuki") because kdmapper-based
+# loaders get flagged by scanners; the password keeps AV sandboxes out while
+# staying public to humans.
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  WDK_TASK: >-
+    C:\Program Files*\Windows Kits\10\build\*\bin\
+    Microsoft.DriverKit.Build.Tasks.17.0.dll
+  WDK_URL: https://go.microsoft.com/fwlink/?linkid=2272234
+
+jobs:
+  build:
+    name: Build (Release x64)
+    runs-on: windows-2022
+    steps:
+      - name: Checkout (with kdmapper submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup MSBuild (VS2022)
+        uses: microsoft/setup-msbuild@v2
+        with:
+          vs-version: '[17.0,18.0)'
+
+      - name: Install WDK (skip if present)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $taskPat = "${{ env.WDK_TASK }}"
+          $wdkTask = Get-ChildItem $taskPat `
+            -ErrorAction SilentlyContinue |
+            Sort-Object { $_.Directory.Parent.Name } -Descending |
+            Select-Object -First 1
+          $wdfDir = Get-ChildItem `
+            "C:\Program Files*\Windows Kits\10\Include\*\wdf" `
+            -Directory -ErrorAction SilentlyContinue |
+            Sort-Object { $_.Parent.Name } -Descending |
+            Select-Object -First 1
+
+          if ($wdfDir -and $wdkTask) {
+            Write-Host "WDK already installed: $($wdfDir.Parent.Name)"
+          } else {
+            Write-Host "Installing WDK 26100..."
+            $installer = "$env:TEMP\wdksetup.exe"
+            Invoke-WebRequest -Uri "${{ env.WDK_URL }}" `
+              -OutFile $installer -UseBasicParsing
+            $args = "/quiet", "/norestart", "/features", "+"
+            $proc = Start-Process -FilePath $installer `
+              -ArgumentList $args -Wait -NoNewWindow -PassThru
+            Write-Host "WDK installer exit code: $($proc.ExitCode)"
+            if ($proc.ExitCode -ne 0) { exit 1 }
+          }
+
+          # Wire the WDK VSIX into the VS2022 MSBuild instance.
+          $vswhere = "${env:ProgramFiles(x86)}" +
+            "\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsInstall = & $vswhere -products * `
+            -requires Microsoft.Component.MSBuild `
+            -version "[17.0,18.0)" `
+            -property installationPath -latest
+          if (-not $vsInstall) {
+            Write-Error "Visual Studio 2022 with MSBuild not found"
+            exit 1
+          }
+          Write-Host "Visual Studio: $vsInstall"
+
+          $wdkTask = Get-ChildItem $taskPat `
+            -ErrorAction SilentlyContinue |
+            Sort-Object { $_.Directory.Parent.Name } -Descending |
+            Select-Object -First 1
+          if (-not $wdkTask) {
+            Write-Error "WDK MSBuild task for VS2022 not found"
+            exit 1
+          }
+
+          $vsixInstaller = Join-Path $vsInstall `
+            "Common7\IDE\VSIXInstaller.exe"
+          $vsixFiles = Get-ChildItem `
+            "C:\Program Files*\Windows Kits\10\Vsix\*\WDK.vsix" `
+            -Recurse -ErrorAction SilentlyContinue
+          foreach ($vsix in $vsixFiles) {
+            Write-Host "Installing VSIX: $($vsix.FullName)"
+            $p = Start-Process -FilePath $vsixInstaller `
+              -ArgumentList "/q", $vsix.FullName `
+              -Wait -NoNewWindow -PassThru
+            Write-Host "VSIX exit code: $($p.ExitCode)"
+          }
+
+      - name: Build (Release x64)
+        shell: cmd
+        run: build.bat Release
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $out = "build\Release"
+          $wanted = @('izukidio.sys', 'izukidio.inf',
+                      'izukiloader.exe',
+                      'izukidio.pdb', 'izukiloader.pdb')
+          foreach ($f in $wanted) {
+            $src = Join-Path $out $f
+            if (Test-Path $src) {
+              Copy-Item $src dist\
+            } else {
+              Write-Host "::warning::missing artifact $f"
+            }
+          }
+          if (-not (Test-Path dist\izukidio.sys)) {
+            Write-Error "izukidio.sys was not produced"
+            exit 1
+          }
+          Get-ChildItem dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: izukidio-dist
+          path: dist/
+
+  release:
+    name: CI release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: izukidio-dist
+          path: dist/
+
+      - name: Package (password izuki)
+        run: |
+          cd dist
+          7z a -tzip -pizuki \
+            "../izukidio-ci-${{ github.run_number }}.zip" .
+          cd ..
+          7z t -pizuki \
+            "izukidio-ci-${{ github.run_number }}.zip"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ci-${{ github.run_number }}
+          name: >-
+            CI build ${{ github.run_number }}
+            (${{ github.ref_name }})
+          body: |
+            Automated CI build of commit ${{ github.sha }}.
+
+            **Archive password: `izuki`**
+
+            Contents: `izukidio.sys` + `izukidio.inf`
+            (PnP/test-signing path), `izukiloader.exe`
+            (kdmapper-based mapper path), PDBs.
+
+            Research PoC for the Behringer 2902 driver
+            reimplementation. Load at your own risk; not signed.
+          files: izukidio-ci-${{ github.run_number }}.zip
+          generate_release_notes: false
