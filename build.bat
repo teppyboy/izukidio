@@ -5,14 +5,11 @@ rem VS2026 (v18) MSBuild always fails with "ValidateNTTargetVersion could not be
 rem loaded ... 18.0.dll". Also the 32-bit MSBuild breaks InfVerif (no x86 dll).
 rem WDK 28000.2526 is required for native VS2026 IDE driver builds.
 setlocal
-set "MSBUILD="
-set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-if exist "%VSWHERE%" (
-    for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.Component.MSBuild -version "[17.0,18.0)" -property installationPath`) do (
-        if exist "%%i\MSBuild\Current\Bin\amd64\MSBuild.exe" set "MSBUILD=%%i\MSBuild\Current\Bin\amd64\MSBuild.exe"
-    )
-)
-if not defined MSBUILD set "MSBUILD=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\amd64\MSBuild.exe"
+rem vswhere path uses %ProgramFiles(x86)% — do NOT put inside a parenthesized
+rem cmd block: the ) in the variable name closes the block at parse time.
+set "VSWHERE=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+set "MSBUILD=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\amd64\MSBuild.exe"
+if exist "%VSWHERE%" for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.Component.MSBuild -version "[17.0,18.0)" -property installationPath`) do if exist "%%i\MSBuild\Current\Bin\amd64\MSBuild.exe" set "MSBUILD=%%i\MSBuild\Current\Bin\amd64\MSBuild.exe"
 if not exist "%MSBUILD%" (
     echo ERROR: VS2022 amd64 MSBuild not found at "%MSBUILD%"
     exit /b 1
